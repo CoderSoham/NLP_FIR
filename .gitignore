@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+*.log
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# OS/IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Environment/config
+.env
+.env.*
+*.local
+
+# Build/dist
+build/
+dist/
+*.whl
+
+# Models and large artifacts
+models/**/*.pth
+models/**/*.pkl
+models/**/*.pt
+
+# App generated media and outputs
+uploads/
+static/uploads/
+processed/
+static/plots/*.png
+plots/
+*.mp3
+*.wav
+*.m4a
+*.ogg
+*.flac
+*.png
+*.jpg
+*.jpeg
+*.pdf
+
+# Temp files
+*.tmp
+*.temp
+~$*
+*.bak
+
+# Notebooks checkpoints
+.ipynb_checkpoints/

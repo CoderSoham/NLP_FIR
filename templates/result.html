@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FIR Result</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>📄 FIR Result</h1>
+        <h2>Transcription:</h2>
+        <p>{{ transcription }}</p>
+
+        <h2>Generated FIR:</h2>
+        <pre>{{ fir_text }}</pre>
+        <a href="{{ url_for('download', filename=fir_file) }}">⬇️ Download FIR</a>
+
+        <h2>📊 Audio Visualizations:</h2>
+        {% for plot in plots %}
+            <img src="{{ url_for('static', filename=plot) }}" width="600">
+        {% endfor %}
+    </div>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>911 First Responder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      display: block;
+      margin-bottom: 20px;
+    }
+    .section {
+      margin: 20px 0;
+    }
+    .plot {
+      width: 100%;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .audio-player {
+      width: 100%;
+      margin: 20px 0;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .upload-form {
+      margin-bottom: 20px;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .emergency-info {
+      background: #fff3cd;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .severity-high {
+      background: #f8d7da;
+    }
+    .severity-medium {
+      background: #fff3cd;
+    }
+    .severity-low {
+      background: #d1e7dd;
+    }
+    .response-suggestions {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .suggestion-item {
+      margin: 10px 0;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 4px;
+    }
+    .timestamp {
+      color: #6c757d;
+      font-size: 0.9em;
+      margin-bottom: 10px;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    input[type="file"] {
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body class="light">
+  <div class="mode-toggle">
+    <button id="modeToggle">Switch to Dark Mode</button>
+  </div>
+
+  <div class="container">
+    <h1>🚨 911 First Responder</h1>
+
+    <div class="upload-form">
+      <form method="post" enctype="multipart/form-data">
+        <input type="file" name="audio_file" accept="audio/*" required>
+        <button type="submit">Process Audio</button>
+      </form>
+    </div>
+
+    {% if audio_url %}
+    <div class="audio-player section">
+      <h2>🎧 Audio Playback</h2>
+      <audio controls>
+        <source src="{{ audio_url }}" type="audio/wav">
+        Your browser does not support the audio element.
+      </audio>
+    </div>
+    {% endif %}
+
+    {% if transcription %}
+    <div class="timestamp section">
+      Processed at: {{ timestamp }}
+    </div>
+
+    <div class="emergency-info severity-{{ severity }} section">
+      <h2>🚨 Emergency Analysis</h2>
+      <p><strong>Type:</strong> {{ emergency_type|title }}</p>
+      <p><strong>Severity:</strong> {{ severity|title }}</p>
+      <p><strong>Priority:</strong> {{ emergency_response.priority|title }}</p>
+    </div>
+
+    <div class="response-suggestions section">
+      <h2>📋 Recommended Actions</h2>
+      {% for suggestion in emergency_response.suggestions %}
+      <div class="suggestion-item">
+        {{ suggestion }}
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="section">
+      <h2>📝 Transcription</h2>
+      <p>{{ transcription }}</p>
+    </div>
+
+    {% if summary and summary|length > 0 %}
+    <div class="section">
+      <h2>📋 Summary</h2>
+      <p>{{ summary }}</p>
+    </div>
+    {% endif %}
+
+    <div class="section">
+      <h2>🎯 Matched Command</h2>
+      <p>{{ best_match }} (Confidence: {{ "%.2f"|format(score) }})</p>
+    </div>
+
+    <div class="section">
+      <h2>👥 Named Entities</h2>
+      <ul>
+        {% for entity in entities %}
+        <li>{{ entity.text }} ({{ entity.label }})</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>📊 Waveform</h2>
+      <img src="{{ url_for('static', filename='plots/waveform.png') }}" class="plot">
+    </div>
+
+    <div class="section">
+      <h2>🎵 MFCC</h2>
+      <img src="{{ url_for('static', filename='plots/mfcc.png') }}" class="plot">
+    </div>
+
+    <div class="section">
+      <h2>🎼 Pitch</h2>
+      <img src="{{ url_for('static', filename='plots/pitch.png') }}" class="plot">
+    </div>
+
+    <div class="section">
+      <h2>📈 Entities Distribution</h2>
+      <img src="{{ url_for('static', filename='plots/entities.png') }}" class="plot">
+    </div>
+
+    <div class="section">
+      <a href="{{ url_for('download_fir') }}" class="button">📄 Download FIR Report</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- WORKING SCRIPT -->
+  <script>
+    const body = document.body;
+    const toggleBtn = document.getElementById('modeToggle');
+
+    toggleBtn.addEventListener('click', () => {
+      if (body.classList.contains('light')) {
+        body.classList.remove('light');
+        body.classList.add('dark');
+        toggleBtn.textContent = 'Switch to Light Mode';
+      } else {
+        body.classList.remove('dark');
+        body.classList.add('light');
+        toggleBtn.textContent = 'Switch to Dark Mode';
+      }
+    });
+  </script>
+</body>
+</html>

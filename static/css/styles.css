@@ -1,0 +1,146 @@
+body {
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+    transition: background 0.3s, color 0.3s;
+}
+
+.light {
+    background-color: #f4f4f4;
+    color: #111827;
+}
+
+.dark {
+    background-color: #111827;
+    color: #f4f4f4;
+}
+
+.mode-toggle {
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px 30px;
+}
+
+.mode-toggle button {
+    padding: 8px 14px;
+    background-color: #222;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.dark .mode-toggle button {
+    background-color: #ddd;
+    color: #000;
+}
+
+.container {
+    max-width: 800px;
+    margin: 30px auto;
+    background-color: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.05);
+    transition: background 0.3s;
+}
+
+.dark .container {
+    background-color: #1f2937;
+}
+
+h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+input[type="file"] {
+    padding: 10px;
+    background-color: #f9fafb;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+button {
+    padding: 12px;
+    background-color: crimson;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+button:hover {
+    background-color: darkred;
+}
+
+.download-btn {
+    margin-top: 20px;
+}
+
+.output-section {
+    margin-top: 40px;
+}
+
+.entity-list {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+}
+
+.entity-list li {
+    margin-bottom: 5px;
+    font-size: 1rem;
+}
+
+img {
+    width: 100%;
+    max-width: 400px;
+    border-radius: 10px;
+    margin: 10px;
+    border: 1px solid #ccc;
+}
+
+.image-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+}
+
+audio {
+    margin-top: 10px;
+    width: 100%;
+    max-width: 100%;
+    outline: none;
+}
+
+.light {
+    background-color: #f4f4f4;
+    color: #111827;
+  }
+  
+  .dark {
+    background-color: #111827;
+    color: #f4f4f4;
+  }
+  
+  .dark .container {
+    background-color: #1f2937;
+  }
+  
+  .dark .mode-toggle button {
+    background-color: #ddd;
+    color: #000;
+  }
+  
