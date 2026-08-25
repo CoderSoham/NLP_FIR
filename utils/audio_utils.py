@@ -1,4 +1,5 @@
 import os
+import uuid
 import whisper
 import torch
 import librosa
@@ -80,14 +81,17 @@ def load_emergency_classifier():
     return EMERGENCY_CLASSIFIER
 
 def load_severity_classifier():
+    """Zero-shot severity scoring.
+
+    Reuses the bart-large-mnli pipeline rather than loading a second model.
+    This was previously `microsoft/deberta-v3-base`, which has no NLI head --
+    the zero-shot pipeline attaches a randomly initialised classification head
+    to it, so every severity score it produced was untrained noise. Reusing
+    the MNLI model fixes the correctness problem and saves ~400 MB of RAM.
+    """
     global SEVERITY_CLASSIFIER
     if SEVERITY_CLASSIFIER is None:
-        SEVERITY_CLASSIFIER = pipeline(
-            "zero-shot-classification",
-            model="microsoft/deberta-v3-base",
-            device=-1,  # Force CPU usage
-            framework="pt"  # Use PyTorch backend
-        )
+        SEVERITY_CLASSIFIER = load_emergency_classifier()
     return SEVERITY_CLASSIFIER
 
 def load_ner_model():
@@ -491,16 +495,25 @@ def assess_severity(text, entities):
         
         # Calculate severity score
         severity_score = 0
-        
-        # Base severity from classifier
-        severity_score += severity_result['scores'][0] * 0.4
-        
-        # Adjust based on sentiment
+
+        # Base severity from classifier.
+        # `scores[0]` is the confidence of whichever label ranked first, so the
+        # previous version scored a confident "low" exactly like a confident
+        # "high" -- it read the confidence and discarded the class. Take an
+        # expectation over the label distribution instead.
+        by_label = dict(zip(severity_result['labels'], severity_result['scores']))
+        severity_score += 0.4 * (by_label.get('high', 0.0)
+                                 + 0.5 * by_label.get('medium', 0.0))
+
+        # Adjust based on sentiment (bertweet emits POS / NEU / NEG)
         if sentiment['label'] == 'NEG':
             severity_score += sentiment['score'] * 0.2
-        
-        # Adjust based on emotion
-        if emotion['label'] in ['fear', 'anxiety']:
+
+        # Adjust based on emotion. The detector
+        # (j-hartmann/emotion-english-distilroberta-base) emits anger, disgust,
+        # fear, joy, neutral, sadness, surprise -- it has no 'anxiety' label, so
+        # the old check could only ever fire on 'fear'.
+        if emotion['label'] in ('fear', 'anger', 'sadness', 'disgust'):
             severity_score += emotion['score'] * 0.2
         
         # Adjust based on entities
@@ -565,9 +578,14 @@ def process_audio_file(input_path, output_folder):
         # Generate visualizations
         generate_visualizations(audio, sr, output_folder)
         
+        # Identifies every artefact this request produces. Without it the
+        # intermediate WAV and the PDF were fixed filenames shared by all
+        # concurrent requests.
+        report_id = uuid.uuid4().hex
+
         # Convert to WAV if needed
         if not input_path.endswith('.wav'):
-            output_path = os.path.join(output_folder, 'temp.wav')
+            output_path = os.path.join(output_folder, f'temp_{report_id}.wav')
             sf.write(output_path, audio, sr)
         else:
             output_path = input_path
@@ -600,9 +618,16 @@ def process_audio_file(input_path, output_folder):
                 except Exception:
                     translated_text = transcription
         
+        # Named entities first -- severity weights them, so they have to exist
+        # before it runs. Previously severity was called with a hardcoded []
+        # and the entity term of its score was dead on every request.
+        ner_model = load_ner_model()
+        doc = ner_model(translated_text)
+        entities = [{"text": ent.text, "label": ent.label_} for ent in doc.ents]
+
         # Get emergency type and severity
         emergency_type = get_emergency_type(translated_text)
-        severity = assess_severity(translated_text, [])
+        severity = assess_severity(translated_text, entities)
         
         # Generate response
         response = get_emergency_response(emergency_type)
@@ -618,12 +643,7 @@ def process_audio_file(input_path, output_folder):
             if not is_summary_informative(summary, translated_text):
                 summary = ""
 
-        # Compute NLP extras for UI and PDF
-        ner_model = load_ner_model()
-        doc = ner_model(translated_text)
-        entities = [{"text": ent.text, "label": ent.label_} for ent in doc.ents]
-
-        # Simple location extraction heuristic
+        # Simple location extraction heuristic (reuses the doc parsed above)
         probable_location = None
         for ent in doc.ents:
             if ent.label_ in ("GPE", "LOC", "FAC"):
@@ -655,6 +675,7 @@ def process_audio_file(input_path, output_folder):
         dispatch = get_dispatch_suggestion(emergency_type, probable_location)
 
         data = {
+            'report_id': report_id,
             'transcription': transcription,
             'translated_text': translated_text if translated_text != transcription else None,
             'language': lang,
@@ -674,8 +695,15 @@ def process_audio_file(input_path, output_folder):
             'dispatch': dispatch
         }
         
-        generate_fir_pdf(data)
-        
+        data['fir_pdf'] = generate_fir_pdf(data)
+
+        # the resampled intermediate is not needed once the PDF exists
+        if output_path != input_path:
+            try:
+                os.remove(output_path)
+            except OSError:
+                pass
+
         return data
         
     except Exception as e:
@@ -771,4 +799,11 @@ def generate_fir_pdf(data):
     pdf.set_font("Arial", size=12)
     pdf.multi_cell(0, 10, sanitize_text(f"{data['summary']}\n"))
     
-    pdf.output(os.path.join("processed", "fir_report.pdf"))
+    # One file per report. This used to write a single shared
+    # `processed/fir_report.pdf`, so two concurrent callers overwrote each
+    # other and /download_fir served whichever finished last -- one caller
+    # could download another caller's report. It also ignored PROCESSED_FOLDER.
+    os.makedirs(PROCESSED_FOLDER, exist_ok=True)
+    out_path = os.path.join(PROCESSED_FOLDER, f"fir_{data['report_id']}.pdf")
+    pdf.output(out_path)
+    return out_path

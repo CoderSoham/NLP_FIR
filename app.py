@@ -1,5 +1,6 @@
 from flask import Flask, request, render_template, send_file, url_for, send_from_directory, abort, jsonify
 import os
+import re
 import uuid
 from werkzeug.utils import secure_filename
 from utils.audio_utils import process_audio_file, generate_fir_pdf
@@ -47,10 +48,18 @@ def index():
 def healthz():
     return jsonify({"status": "ok"})
 
-@app.route('/download_fir')
-def download_fir():
-    pdf_path = os.path.join(PROCESSED_FOLDER, "fir_report.pdf")
-    return send_file(pdf_path, as_attachment=True)
+@app.route('/download_fir/<report_id>')
+def download_fir(report_id):
+    # Reports are per-request. This route previously served one shared
+    # `fir_report.pdf`, so under any concurrency a caller could download
+    # somebody else's report.
+    if not re.fullmatch(r'[0-9a-f]{32}', report_id):
+        abort(404)
+    pdf_path = os.path.join(PROCESSED_FOLDER, f"fir_{report_id}.pdf")
+    if not os.path.isfile(pdf_path):
+        abort(404)
+    return send_file(pdf_path, as_attachment=True,
+                     download_name=f"FIR_{report_id[:8]}.pdf")
 
 @app.route('/audio/<filename>')
 def serve_audio(filename):
