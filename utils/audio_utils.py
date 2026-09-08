@@ -26,6 +26,7 @@ warnings.filterwarnings('ignore')
 from config import PROCESSED_FOLDER, WHISPER_MODEL_NAME, FORCE_CPU
 from utils.plots import plot_path, generate_entity_plot
 from utils.dispatch import get_dispatch_suggestion
+from utils.signals import augment_actions
 from typing import Optional, Tuple
 
 _DEVICE = None
@@ -273,48 +274,13 @@ def is_summary_informative(summary: str, source: str) -> bool:
     return False
 
 def augment_actions_from_transcript(transcript: str, base_response: dict) -> dict:
-    """Augment recommended actions based on high-signal phrases in transcript."""
-    t = (transcript or '').lower()
-    suggestions = list(base_response.get('suggestions', []))
-    # Violence/domestic
-    if any(k in t for k in ['domestic', 'ex', 'restraining order', 'stalking', 'threaten', 'violent']):
-        suggestions += [
-            'Dispatch police to secure the scene',
-            'Check for restraining order or prior incidents',
-            'Advise caller to stay in a safe locked room'
-        ]
-    # Weapons/shots
-    if any(k in t for k in ['shot', 'shoot', 'gun', 'gunfire']):
-        suggestions += [
-            'Issue officer safety advisory (possible firearm)',
-            'Request additional police units'
-        ]
-    # Medical critical
-    if any(k in t for k in ['not breathing', 'unconscious', 'severe bleeding', 'cpr']):
-        suggestions += [
-            'Provide pre-arrival instructions (CPR/bleeding control)',
-            'Dispatch ALS ambulance'
-        ]
-    # Fire/hazmat
-    if any(k in t for k in ['smoke', 'flames', 'burning', 'gas leak', 'explosion']):
-        suggestions += [
-            'Shut off gas/electric if safe',
-            'Keep bystanders clear and evacuate adjacent units'
-        ]
-    # Vehicle/traffic
-    if any(k in t for k in ['vehicle', 'truck', 'car', 'crash', 'collision']):
-        suggestions += [
-            'Notify traffic control for scene safety'
-        ]
-    # De-duplicate preserving order
-    seen = set()
-    dedup = []
-    for s in suggestions:
-        if s not in seen:
-            dedup.append(s)
-            seen.add(s)
-    base_response['suggestions'] = dedup
-    return base_response
+    """Augment recommended actions from high-signal phrases in the transcript.
+
+    Delegates to utils.signals, which matches whole words. This used to do
+    `substring in transcript` with 'ex' and 'car' among the keywords -- see the
+    module docstring there for what that did to real calls.
+    """
+    return augment_actions(transcript, base_response)
 
 # Command templates
 known_commands = [

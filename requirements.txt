@@ -14,7 +14,7 @@ huggingface-hub==0.23.2
 sentence-transformers==2.6.1
 spacy==3.7.4
 fpdf==1.7.2
-openai-whisper==20231117
+openai-whisper==20250625
 scipy==1.11.4
 tqdm==4.66.4
 python-dotenv==1.0.1
@@ -23,3 +23,14 @@ emoji==2.12.1
 pydub==0.25.1
 numba<0.60
 sentencepiece==0.2.0
+
+# ffmpeg as a Python dependency rather than a system package. Whisper shells out
+# to ffmpeg; requiring it from apt/brew means the quick start cannot work
+# without root. This ships a static binary, and config.py puts it on PATH.
+imageio-ffmpeg==0.6.0
+
+# The spaCy model, pinned as a dependency instead of a separate
+# `python -m spacy download` step. That command resolves its version from
+# spaCy's compatibility table, which has no entry for 3.7.4, so it builds a URL
+# with an empty version and 404s.
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl

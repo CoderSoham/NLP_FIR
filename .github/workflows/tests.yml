@@ -23,3 +23,22 @@ jobs:
       # covered in seconds instead of downloading 4.5 GB of weights.
       - run: pip install -r requirements-dev.txt
       - run: pytest -q
+
+  # The unit suite deliberately avoids the ML stack, which meant nothing ever
+  # exercised requirements.txt -- and it was broken on Python 3.12 for months
+  # while CI stayed green. A dry run resolves every pin and builds metadata for
+  # sdists, which is exactly where that failure happened, without downloading
+  # and installing several GB of wheels on every push.
+  requirements:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: pip install --dry-run -r requirements.txt

@@ -33,6 +33,11 @@ API_KEY = os.environ.get('API_KEY', '')
 # App settings
 DEBUG = os.environ.get('FLASK_DEBUG', '0') == '1'
 
+# Whisper shells out to ffmpeg by name, so it must be on PATH before the first
+# transcription. Done here because config is imported before utils.audio_utils.
+from utils.ffmpeg_path import ensure_ffmpeg_on_path
+FFMPEG_PATH = ensure_ffmpeg_on_path()
+
 # Model settings
 WHISPER_MODEL_NAME = os.environ.get('WHISPER_MODEL_NAME', 'base')
 
