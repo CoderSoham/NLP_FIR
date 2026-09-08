@@ -164,25 +164,15 @@
       </ul>
     </div>
 
+    {% set plot_titles = {'waveform': '📊 Waveform', 'mfcc': '🎵 MFCC',
+                          'pitch': '🎼 Pitch',
+                          'entities': '📈 Entities Distribution'} %}
+    {% for kind in plots %}
     <div class="section">
-      <h2>📊 Waveform</h2>
-      <img src="{{ url_for('static', filename='plots/waveform.png') }}" class="plot">
+      <h2>{{ plot_titles.get(kind, kind) }}</h2>
+      <img src="{{ url_for('serve_plot', report_id=report_id, kind=kind) }}" class="plot">
     </div>
-
-    <div class="section">
-      <h2>🎵 MFCC</h2>
-      <img src="{{ url_for('static', filename='plots/mfcc.png') }}" class="plot">
-    </div>
-
-    <div class="section">
-      <h2>🎼 Pitch</h2>
-      <img src="{{ url_for('static', filename='plots/pitch.png') }}" class="plot">
-    </div>
-
-    <div class="section">
-      <h2>📈 Entities Distribution</h2>
-      <img src="{{ url_for('static', filename='plots/entities.png') }}" class="plot">
-    </div>
+    {% endfor %}
 
     <div class="section">
       <a href="{{ url_for('download_fir', report_id=report_id) }}" class="button">📄 Download FIR Report</a>

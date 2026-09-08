@@ -4,21 +4,34 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Folders
-UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'static/uploads')
-PROCESSED_FOLDER = os.environ.get('PROCESSED_FOLDER', 'processed')
-STATIC_PLOTS_FOLDER = os.environ.get('STATIC_PLOTS_FOLDER', os.path.join('static', 'plots'))
+# Uploads live outside static/. Serving them from the static mount made every
+# recording publicly fetchable by filename, forever.
+UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', os.path.join('storage', 'uploads'))
+PROCESSED_FOLDER = os.environ.get('PROCESSED_FOLDER', os.path.join('storage', 'processed'))
 
 # Upload constraints
 ALLOWED_EXTENSIONS = { 'wav', 'mp3', 'm4a', 'ogg' }
 MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 25 * 1024 * 1024))  # 25 MB
 
+# Retention. Emergency-call audio is not something to keep indefinitely, so
+# uploads and generated artefacts are deleted once they age out.
+RETENTION_SECONDS = int(os.environ.get('RETENTION_SECONDS', 3600))
+RETENTION_SWEEP_SECONDS = int(os.environ.get('RETENTION_SWEEP_SECONDS', 300))
+
 # App settings
 DEBUG = os.environ.get('FLASK_DEBUG', '0') == '1'
-SECRET_KEY = os.environ.get('SECRET_KEY', 'change-this-in-prod')
 
 # Model settings
 WHISPER_MODEL_NAME = os.environ.get('WHISPER_MODEL_NAME', 'base')
+
+# CPU by default. A 6 GB card will not hold both BART-large models at once, so
+# opting in is a decision about your hardware, not a default we can pick.
 FORCE_CPU = os.environ.get('FORCE_CPU', '1') == '1'
-TOKENIZERS_PARALLELISM = os.environ.get('TOKENIZERS_PARALLELISM', 'false')
+
+# Must reach HuggingFace through the environment, not as a Python name --
+# transformers reads os.environ at import time. Set here so it is set before
+# utils.audio_utils imports transformers.
+os.environ.setdefault('TOKENIZERS_PARALLELISM',
+                      os.environ.get('TOKENIZERS_PARALLELISM', 'false'))
 
 

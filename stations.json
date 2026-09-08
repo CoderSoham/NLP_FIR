@@ -1,0 +1,90 @@
+{
+  "medical": [
+    {
+      "name": "Central Hospital",
+      "area_keywords": [
+        "downtown",
+        "central",
+        "hospital"
+      ],
+      "base_eta_min": 6,
+      "units": [
+        "ambulance"
+      ]
+    },
+    {
+      "name": "North Clinic",
+      "area_keywords": [
+        "north",
+        "uptown"
+      ],
+      "base_eta_min": 10,
+      "units": [
+        "ambulance"
+      ]
+    }
+  ],
+  "fire": [
+    {
+      "name": "Station 1",
+      "area_keywords": [
+        "downtown",
+        "central"
+      ],
+      "base_eta_min": 5,
+      "units": [
+        "fire_truck"
+      ]
+    },
+    {
+      "name": "Station 7",
+      "area_keywords": [
+        "east",
+        "industrial"
+      ],
+      "base_eta_min": 9,
+      "units": [
+        "fire_truck"
+      ]
+    }
+  ],
+  "police": [
+    {
+      "name": "Precinct A",
+      "area_keywords": [
+        "downtown",
+        "central"
+      ],
+      "base_eta_min": 4,
+      "units": [
+        "police_unit"
+      ]
+    },
+    {
+      "name": "Precinct B",
+      "area_keywords": [
+        "west",
+        "suburb"
+      ],
+      "base_eta_min": 8,
+      "units": [
+        "police_unit"
+      ]
+    }
+  ],
+  "accident": [
+    {
+      "name": "Traffic Response Team",
+      "area_keywords": [
+        "highway",
+        "bridge",
+        "junction"
+      ],
+      "base_eta_min": 7,
+      "units": [
+        "traffic_unit",
+        "ambulance"
+      ]
+    }
+  ]
+}

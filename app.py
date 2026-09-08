@@ -4,11 +4,20 @@ import re
 import uuid
 from werkzeug.utils import secure_filename
 from utils.audio_utils import process_audio_file, generate_fir_pdf
-from config import UPLOAD_FOLDER, PROCESSED_FOLDER, MAX_CONTENT_LENGTH, ALLOWED_EXTENSIONS, DEBUG
+from utils.retention import start_background_sweeper
+from config import (UPLOAD_FOLDER, PROCESSED_FOLDER, MAX_CONTENT_LENGTH,
+                    ALLOWED_EXTENSIONS, DEBUG, RETENTION_SECONDS,
+                    RETENTION_SWEEP_SECONDS)
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(PROCESSED_FOLDER, exist_ok=True)
+start_background_sweeper([UPLOAD_FOLDER, PROCESSED_FOLDER],
+                         max_age_seconds=RETENTION_SECONDS,
+                         interval_seconds=RETENTION_SWEEP_SECONDS)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -61,8 +70,35 @@ def download_fir(report_id):
     return send_file(pdf_path, as_attachment=True,
                      download_name=f"FIR_{report_id[:8]}.pdf")
 
+PLOT_KINDS = {'waveform', 'mfcc', 'pitch', 'entities'}
+
+@app.route('/plot/<report_id>/<kind>')
+def serve_plot(report_id, kind):
+    """Serve one plot belonging to one request.
+
+    Plots used to be written to fixed names under `static/plots/` and served by
+    the static mount, so concurrent callers overwrote each other's audio and
+    anyone could fetch the most recent call's waveform without uploading
+    anything. They are now keyed by report_id and served from here, behind the
+    same validation `download_fir` uses -- both path segments are
+    user-controlled, so both are checked against a fixed set.
+    """
+    if kind not in PLOT_KINDS or not re.fullmatch(r'[0-9a-f]{32}', report_id):
+        abort(404)
+    path = os.path.join(PROCESSED_FOLDER, f"{kind}_{report_id}.png")
+    if not os.path.isfile(path):
+        abort(404)
+    return send_file(path, mimetype='image/png')
+
 @app.route('/audio/<filename>')
 def serve_audio(filename):
+    """Serve an uploaded recording.
+
+    Uploads live outside static/ now, so this route is the only way to reach
+    them. `send_from_directory` rejects traversal, and names are uuid4 hex.
+    """
+    if not re.fullmatch(r'[0-9a-f]{32}\.[a-z0-9]{1,5}', filename):
+        abort(404)
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/api/process', methods=['POST'])

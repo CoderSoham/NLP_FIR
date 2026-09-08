@@ -7,6 +7,7 @@ import soundfile as sf
 import matplotlib
 matplotlib.use('Agg')  # Set the backend to non-interactive 'Agg'
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 import numpy as np
 from sentence_transformers import SentenceTransformer, util
 import spacy
@@ -22,8 +23,34 @@ from transformers import pipeline
 from collections import Counter
 import warnings
 warnings.filterwarnings('ignore')
-from config import PROCESSED_FOLDER, STATIC_PLOTS_FOLDER, WHISPER_MODEL_NAME
+from config import PROCESSED_FOLDER, WHISPER_MODEL_NAME, FORCE_CPU
+from utils.plots import plot_path, generate_entity_plot
+from utils.dispatch import get_dispatch_suggestion
 from typing import Optional, Tuple
+
+_DEVICE = None
+
+def resolve_device():
+    """Resolve the torch device once, honouring FORCE_CPU.
+
+    `FORCE_CPU` was defined in config.py and read by nothing -- every loader
+    hardcoded 'cpu' / -1 at its call site, so a GPU on the host went unused and
+    the setting was a knob wired to nothing.
+
+    Defaults to CPU. Both BART-large models together do not fit on a 6 GB card,
+    so enabling CUDA is a claim about your hardware that only you can make.
+    """
+    global _DEVICE
+    if _DEVICE is None:
+        if not FORCE_CPU and torch.cuda.is_available():
+            _DEVICE = 'cuda'
+        else:
+            _DEVICE = 'cpu'
+    return _DEVICE
+
+def pipeline_device():
+    """transformers.pipeline takes an int: -1 for CPU, else the CUDA ordinal."""
+    return 0 if resolve_device() == 'cuda' else -1
 
 # Initialize models as None for lazy loading
 whisper_model = None
@@ -43,7 +70,7 @@ def load_whisper_model():
     global whisper_model
     if whisper_model is None:
         # Force CPU usage and set specific parameters
-        whisper_model = whisper.load_model(WHISPER_MODEL_NAME, device="cpu")
+        whisper_model = whisper.load_model(WHISPER_MODEL_NAME, device=resolve_device())
         # Set model parameters for better stability
         whisper_model.eval()  # Set to evaluation mode
     return whisper_model
@@ -51,7 +78,7 @@ def load_whisper_model():
 def load_embedder():
     global embedder
     if embedder is None:
-        embedder = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
+        embedder = SentenceTransformer('all-MiniLM-L6-v2', device=resolve_device())
     return embedder
 
 def load_nlp():
@@ -75,7 +102,7 @@ def load_emergency_classifier():
         EMERGENCY_CLASSIFIER = pipeline(
             "zero-shot-classification",
             model="facebook/bart-large-mnli",
-            device=-1,  # Force CPU usage
+            device=pipeline_device(),
             framework="pt"  # Use PyTorch backend
         )
     return EMERGENCY_CLASSIFIER
@@ -103,7 +130,7 @@ def load_ner_model():
 def load_sentence_model():
     global SENTENCE_MODEL
     if SENTENCE_MODEL is None:
-        SENTENCE_MODEL = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
+        SENTENCE_MODEL = SentenceTransformer('all-MiniLM-L6-v2', device=resolve_device())
     return SENTENCE_MODEL
 
 def load_summarizer():
@@ -112,7 +139,7 @@ def load_summarizer():
         SUMMARIZER = pipeline(
             "summarization",
             model="facebook/bart-large-cnn",
-            device=-1,  # Force CPU usage
+            device=pipeline_device(),
             framework="pt"  # Use PyTorch backend
         )
     return SUMMARIZER
@@ -123,7 +150,7 @@ def load_sentiment_analyzer():
         SENTIMENT_ANALYZER = pipeline(
             "sentiment-analysis",
             model="finiteautomata/bertweet-base-sentiment-analysis",
-            device=-1,  # Force CPU usage
+            device=pipeline_device(),
             framework="pt"  # Use PyTorch backend
         )
     return SENTIMENT_ANALYZER
@@ -134,7 +161,7 @@ def load_emotion_detector():
         EMOTION_DETECTOR = pipeline(
             "text-classification",
             model="j-hartmann/emotion-english-distilroberta-base",
-            device=-1,  # Force CPU usage
+            device=pipeline_device(),
             framework="pt"  # Use PyTorch backend
         )
     return EMOTION_DETECTOR
@@ -352,49 +379,6 @@ EMERGENCY_RESPONSES = {
     }
 }
 
-# Simple station registry for dispatch suggestion (placeholder)
-STATIONS = {
-    'medical': [
-        {'name': 'Central Hospital', 'area_keywords': ['downtown', 'central', 'hospital'], 'base_eta_min': 6, 'units': ['ambulance']},
-        {'name': 'North Clinic', 'area_keywords': ['north', 'uptown'], 'base_eta_min': 10, 'units': ['ambulance']},
-    ],
-    'fire': [
-        {'name': 'Station 1', 'area_keywords': ['downtown', 'central'], 'base_eta_min': 5, 'units': ['fire_truck']},
-        {'name': 'Station 7', 'area_keywords': ['east', 'industrial'], 'base_eta_min': 9, 'units': ['fire_truck']},
-    ],
-    'police': [
-        {'name': 'Precinct A', 'area_keywords': ['downtown', 'central'], 'base_eta_min': 4, 'units': ['police_unit']},
-        {'name': 'Precinct B', 'area_keywords': ['west', 'suburb'], 'base_eta_min': 8, 'units': ['police_unit']},
-    ],
-    'accident': [
-        {'name': 'Traffic Response Team', 'area_keywords': ['highway', 'bridge', 'junction'], 'base_eta_min': 7, 'units': ['traffic_unit', 'ambulance']},
-    ]
-}
-
-def get_dispatch_suggestion(emergency_type, probable_location):
-    """Generate a naive dispatch suggestion based on type and a keyword match on location."""
-    et = emergency_type if emergency_type in STATIONS else 'accident'
-    stations = STATIONS.get(et, [])
-    if not stations:
-        return {
-            'station': 'Unknown',
-            'eta_min': 15,
-            'units': ['emergency_team'],
-        }
-    loc = (probable_location or '').lower()
-    best = None
-    for s in stations:
-        if any(k in loc for k in s['area_keywords']):
-            best = s
-            break
-    if best is None:
-        best = stations[0]
-    return {
-        'station': best['name'],
-        'eta_min': best['base_eta_min'],
-        'units': best['units']
-    }
-
 def get_emergency_type(text):
     """Optimized emergency classification using transformer models"""
     if not text or len(text.strip()) < 3:
@@ -574,14 +558,15 @@ def process_audio_file(input_path, output_folder):
         max_seconds = 120
         if len(audio) > sr * max_seconds:
             audio = audio[: sr * max_seconds]
-        
-        # Generate visualizations
-        generate_visualizations(audio, sr, output_folder)
-        
-        # Identifies every artefact this request produces. Without it the
-        # intermediate WAV and the PDF were fixed filenames shared by all
-        # concurrent requests.
+
+        # Identifies every artefact this request produces, and is generated
+        # before the first of them is written. It used to be created after
+        # visualisation, which is why the plots kept fixed shared filenames
+        # long after the PDF stopped having one.
         report_id = uuid.uuid4().hex
+
+        # Generate visualizations
+        plots = generate_visualizations(audio, sr, output_folder, report_id)
 
         # Convert to WAV if needed
         if not input_path.endswith('.wav'):
@@ -624,6 +609,8 @@ def process_audio_file(input_path, output_folder):
         ner_model = load_ner_model()
         doc = ner_model(translated_text)
         entities = [{"text": ent.text, "label": ent.label_} for ent in doc.ents]
+        if generate_entity_plot(entities, output_folder, report_id):
+            plots.append('entities')
 
         # Get emergency type and severity
         emergency_type = get_emergency_type(translated_text)
@@ -686,6 +673,7 @@ def process_audio_file(input_path, output_folder):
             'summary': summary,
             'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             'entities': entities,
+            'plots': plots,
             'best_match': best_match,
             'score': score,
             'sentiment': sentiment,
@@ -710,21 +698,18 @@ def process_audio_file(input_path, output_folder):
         print(f"Error processing audio file: {str(e)}")
         raise  # Re-raise the exception to handle it in the Flask route
 
-def generate_visualizations(audio, sr, output_folder):
-    """Generate audio visualizations"""
-    # Create output directory if it doesn't exist
+def generate_visualizations(audio, sr, output_folder, report_id):
+    """Generate audio visualizations. Returns the plot kinds written."""
     os.makedirs(output_folder, exist_ok=True)
-    os.makedirs(STATIC_PLOTS_FOLDER, exist_ok=True)
-    
+
     # Waveform plot
     plt.figure(figsize=(12, 4))
     librosa.display.waveshow(audio, sr=sr)
     plt.title('Waveform')
     plt.tight_layout()
-    plt.savefig(os.path.join(output_folder, 'waveform.png'))
-    plt.savefig(os.path.join(STATIC_PLOTS_FOLDER, 'waveform.png'))
+    plt.savefig(plot_path(output_folder, 'waveform', report_id))
     plt.close()
-    
+
     # MFCC plot
     mfccs = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=13)
     plt.figure(figsize=(12, 4))
@@ -732,19 +717,19 @@ def generate_visualizations(audio, sr, output_folder):
     plt.colorbar(format='%+2.0f dB')
     plt.title('MFCC')
     plt.tight_layout()
-    plt.savefig(os.path.join(output_folder, 'mfcc.png'))
-    plt.savefig(os.path.join(STATIC_PLOTS_FOLDER, 'mfcc.png'))
+    plt.savefig(plot_path(output_folder, 'mfcc', report_id))
     plt.close()
-    
+
     # Pitch plot
     pitches, magnitudes = librosa.piptrack(y=audio, sr=sr)
     plt.figure(figsize=(12, 4))
     plt.plot(pitches)
     plt.title('Pitch')
     plt.tight_layout()
-    plt.savefig(os.path.join(output_folder, 'pitch.png'))
-    plt.savefig(os.path.join(STATIC_PLOTS_FOLDER, 'pitch.png'))
+    plt.savefig(plot_path(output_folder, 'pitch', report_id))
     plt.close()
+
+    return ['waveform', 'mfcc', 'pitch']
 
 def generate_fir_pdf(data):
     """Generate advanced PDF report"""
