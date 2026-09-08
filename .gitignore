@@ -30,12 +30,13 @@ build/
 dist/
 *.whl
 
-# Models and large artifacts
-models/**/*.pth
-models/**/*.pkl
-models/**/*.pt
+# Models, datasets and anything derived from real calls.
+# Ignored wholesale rather than by extension -- an extension list is a guess
+# about which files are sensitive, and it guesses wrong.
+models/
 
 # App generated media and outputs
+storage/
 uploads/
 static/uploads/
 processed/
@@ -59,3 +60,6 @@ plots/
 
 # Notebooks checkpoints
 .ipynb_checkpoints/
+
+# Test artefacts
+.pytest_cache/
