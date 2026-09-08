@@ -144,6 +144,7 @@ entities, summary, sentiment, emotion, dispatch, and `report_id`.
 | `GET /` | Upload form |
 | `POST /` | Upload and render results |
 | `POST /api/process` | Same pipeline, JSON response |
+| | Upload routes are rate limited; `429` carries `Retry-After` |
 | `GET /download_fir/<report_id>` | Fetch that request's PDF |
 | `GET /plot/<report_id>/<kind>` | Fetch a plot from that request |
 | `GET /audio/<filename>` | Serve an uploaded recording |
@@ -164,6 +165,10 @@ All of `config.py` reads from the environment.
 | `FORCE_CPU` | `1` | Set `0` to use CUDA when available |
 | `RETENTION_SECONDS` | `3600` | Age at which stored files are deleted |
 | `RETENTION_SWEEP_SECONDS` | `300` | How often the sweeper runs |
+| `RATE_LIMIT_REQUESTS` | `10` | Pipeline runs allowed per window, per caller |
+| `RATE_LIMIT_WINDOW_SECONDS` | `600` | Length of that window |
+| `TRUST_PROXY_HEADERS` | `0` | Set `1` only behind a proxy you control |
+| `API_KEY` | unset | When set, upload routes require `X-API-Key` |
 
 
 ## Data handling
@@ -178,6 +183,8 @@ The input is emergency-call audio, so the defaults are conservative.
   nothing else.
 - **Plots and reports are keyed to the request that produced them** and served
   through validated routes, so one caller cannot reach another's artefacts.
+- **Uploads are rate limited per caller**, and can be put behind an API key by
+  setting `API_KEY`.
 - **Nothing leaves the machine.** No API keys, no external calls, no telemetry.
   Model weights are fetched from HuggingFace on first run and cached locally.
 - **No call audio or transcripts are distributed with this repository**, and

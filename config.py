@@ -18,6 +18,18 @@ MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 25 * 1024 * 1024))
 RETENTION_SECONDS = int(os.environ.get('RETENTION_SECONDS', 3600))
 RETENTION_SWEEP_SECONDS = int(os.environ.get('RETENTION_SWEEP_SECONDS', 300))
 
+# Rate limiting. Each request costs tens of seconds of CPU, so the unit worth
+# limiting is "pipeline runs started", not bytes or connections.
+RATE_LIMIT_REQUESTS = int(os.environ.get('RATE_LIMIT_REQUESTS', 10))
+RATE_LIMIT_WINDOW_SECONDS = int(os.environ.get('RATE_LIMIT_WINDOW_SECONDS', 600))
+
+# Only consult X-Forwarded-For when a proxy you control sets it. Off by
+# default: trusting it unconditionally lets any caller reset their own bucket.
+TRUST_PROXY_HEADERS = os.environ.get('TRUST_PROXY_HEADERS', '0') == '1'
+
+# Unset means open. Set it and the upload routes require X-API-Key.
+API_KEY = os.environ.get('API_KEY', '')
+
 # App settings
 DEBUG = os.environ.get('FLASK_DEBUG', '0') == '1'
 

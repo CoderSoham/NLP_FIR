@@ -5,9 +5,11 @@ import uuid
 from werkzeug.utils import secure_filename
 from utils.audio_utils import process_audio_file, generate_fir_pdf
 from utils.retention import start_background_sweeper
+from utils.ratelimit import RateLimiter, client_key, api_key_ok
 from config import (UPLOAD_FOLDER, PROCESSED_FOLDER, MAX_CONTENT_LENGTH,
                     ALLOWED_EXTENSIONS, DEBUG, RETENTION_SECONDS,
-                    RETENTION_SWEEP_SECONDS)
+                    RETENTION_SWEEP_SECONDS, RATE_LIMIT_REQUESTS,
+                    RATE_LIMIT_WINDOW_SECONDS, TRUST_PROXY_HEADERS, API_KEY)
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -19,10 +21,36 @@ start_background_sweeper([UPLOAD_FOLDER, PROCESSED_FOLDER],
                          max_age_seconds=RETENTION_SECONDS,
                          interval_seconds=RETENTION_SWEEP_SECONDS)
 
+limiter = RateLimiter(RATE_LIMIT_REQUESTS, RATE_LIMIT_WINDOW_SECONDS)
+
+
+def guard_upload():
+    """Auth then rate limit, for the two routes that start a pipeline run.
+
+    Returns a response to send, or None to continue. Only the upload routes are
+    guarded: fetching an artefact you already own is cheap, and rate-limiting
+    the result page would throttle the images on it.
+    """
+    if not api_key_ok(request, API_KEY):
+        return jsonify({"error": "Invalid or missing API key"}), 401
+    allowed, retry_after = limiter.check(client_key(request, TRUST_PROXY_HEADERS))
+    if not allowed:
+        response = jsonify({
+            "error": "Too many requests",
+            "detail": "Each call takes tens of seconds of CPU. Try again shortly.",
+        })
+        response.status_code = 429
+        response.headers["Retry-After"] = str(retry_after)
+        return response
+    return None
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     data = {}
     if request.method == 'POST':
+        blocked = guard_upload()
+        if blocked is not None:
+            return blocked
         if 'audio_file' not in request.files:
             return 'No file part'
 
@@ -103,6 +131,9 @@ def serve_audio(filename):
 
 @app.route('/api/process', methods=['POST'])
 def api_process():
+    blocked = guard_upload()
+    if blocked is not None:
+        return blocked
     if 'audio_file' not in request.files:
         return jsonify({"error": "No file part"}), 400
     file = request.files['audio_file']
