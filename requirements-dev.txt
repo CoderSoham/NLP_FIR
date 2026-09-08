@@ -1,0 +1,6 @@
+# Test dependencies. Deliberately excludes the ML stack -- the suite runs
+# without torch, whisper, spacy or transformers installed, which is what keeps
+# it fast enough to run on every push.
+pytest==8.2.0
+flask==2.3.3
+matplotlib==3.8.4
