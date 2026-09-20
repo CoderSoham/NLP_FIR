@@ -119,6 +119,15 @@ h2 {
 .severity-medium { background: var(--sev-medium); }
 .severity-low { background: var(--sev-low); }
 
+.notice {
+  background: var(--sev-medium);
+  color: var(--sev-text);
+  border-left: 4px solid var(--accent);
+  padding: 14px 18px;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
 .suggestion-item {
   margin: 10px 0;
   padding: 10px;
@@ -178,4 +187,116 @@ img {
 audio {
   width: 100%;
   margin-top: 10px;
+}
+
+/* ---- Triage header -------------------------------------------------------
+   The four fields a dispatcher would act on, before anything else. Previously
+   severity was one line of text among eighteen, which is the wrong shape for
+   a page whose whole purpose is deciding what to send. */
+
+.triage {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 4px 24px;
+  padding: 22px 24px;
+  border-radius: 10px;
+  margin: 20px 0;
+  box-shadow: var(--shadow);
+  color: var(--sev-text);
+}
+
+.triage-main { display: flex; flex-direction: column; padding: 6px 0; }
+
+.triage-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+}
+
+.triage-value { font-size: 1.35rem; font-weight: 600; line-height: 1.3; }
+
+.tagline { color: var(--muted); margin: -8px 0 4px; }
+
+.lede { font-size: 1.05rem; line-height: 1.6; }
+
+.meta { color: var(--muted); font-size: 0.85rem; margin: 0 0 10px; }
+
+.muted { color: var(--muted); font-weight: 400; }
+
+.warn-text { color: #b45309; }
+
+.notice.warn { border-left-color: #b45309; }
+
+.transcript { line-height: 1.7; }
+
+/* ---- Detail cards -------------------------------------------------------- */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+}
+
+.card h3 {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.card ul { margin: 0; padding-left: 18px; }
+.card p { margin: 0 0 8px; }
+
+/* A weapon is the one field that changes how officers approach a scene. */
+.card.danger { border-left: 4px solid #b91c1c; }
+
+/* Evidence is shown with the claim, never separately: every weapon carries the
+   words from the transcript that established it. */
+.quote {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+.uncertainty li { color: var(--muted); }
+
+/* ---- Entity tags --------------------------------------------------------- */
+
+.entities { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.tag {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 0.9rem;
+}
+
+.tag em {
+  font-style: normal;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+code {
+  background: var(--surface-alt);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 0.9em;
 }

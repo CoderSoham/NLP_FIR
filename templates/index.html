@@ -13,7 +13,8 @@
   </div>
 
   <div class="container">
-    <h1>🚨 911 First Responder</h1>
+    <h1>911 First Responder</h1>
+    <p class="tagline">Upload an emergency call recording for transcription, triage and an incident report.</p>
 
     <div class="upload-form">
       <form method="post" enctype="multipart/form-data">
@@ -37,15 +38,103 @@
       Processed at: {{ timestamp }}
     </div>
 
-    <div class="emergency-info severity-{{ severity }} section">
-      <h2>🚨 Emergency Analysis</h2>
-      <p><strong>Type:</strong> {{ emergency_type|title }}</p>
-      <p><strong>Severity:</strong> {{ severity|title }}</p>
-      <p><strong>Priority:</strong> {{ emergency_response.priority|title }}</p>
+    {% if truncated %}
+    <div class="notice section">
+      <strong>Partial analysis.</strong> Only the first
+      {{ '%d:%02d'|format(analysed_duration_s // 60, analysed_duration_s % 60) }}
+      of a
+      {{ '%d:%02d'|format(source_duration_s // 60, source_duration_s % 60) }}
+      recording was analysed.
+    </div>
+    {% endif %}
+
+    {% set L = llm or {} %}
+    <div class="triage severity-{{ severity }}">
+      <div class="triage-main">
+        <span class="triage-label">Emergency type</span>
+        <span class="triage-value">{{ (L.incident_type or emergency_type)|title }}</span>
+      </div>
+      <div class="triage-main">
+        <span class="triage-label">Severity</span>
+        <span class="triage-value">{{ (L.severity or severity)|title }}</span>
+      </div>
+      <div class="triage-main">
+        <span class="triage-label">Location</span>
+        <span class="triage-value">{{ L.location or probable_location or 'Not stated' }}</span>
+      </div>
+      <div class="triage-main">
+        <span class="triage-label">Nearest station</span>
+        <span class="triage-value">
+          {% if dispatch and dispatch.basis == 'location_match' %}
+            {{ dispatch.station }}{% if dispatch.eta_min %} · {{ dispatch.eta_min }} min{% endif %}
+          {% else %}
+            <span class="muted">No location match</span>
+          {% endif %}
+        </span>
+      </div>
+    </div>
+
+    {% if disagreements %}
+    <div class="notice warn section">
+      <strong>The two analyses disagree.</strong> Both are shown because a
+      disagreement is a reason for a person to look, not something to resolve
+      automatically.
+      <ul>
+        {% for d in disagreements %}
+        <li><strong>{{ d.field|replace('_',' ')|title }}:</strong>
+          rules say <code>{{ d.classical }}</code>, model says <code>{{ d.llm }}</code></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if L.summary %}
+    <div class="section">
+      <h2>Summary</h2>
+      <p class="lede">{{ L.summary }}</p>
+    </div>
+    {% elif summary %}
+    <div class="section">
+      <h2>Summary</h2>
+      <p class="lede">{{ summary }}</p>
+    </div>
+    {% endif %}
+
+    {% if L.uncertainties %}
+    <div class="section">
+      <h2>What the call does not establish</h2>
+      <ul class="uncertainty">
+        {% for u in L.uncertainties %}<li>{{ u }}</li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <div class="grid">
+      {% if L.weapons %}
+      <div class="card danger">
+        <h3>Weapons</h3>
+        {% for w in L.weapons %}
+        <p><strong>{{ w.item }}</strong><br><span class="quote">"{{ w.quote }}"</span></p>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% if L.injuries %}
+      <div class="card"><h3>Injuries</h3><ul>{% for i in L.injuries %}<li>{{ i }}</li>{% endfor %}</ul></div>
+      {% endif %}
+      {% if L.hazards %}
+      <div class="card"><h3>Hazards</h3><ul>{% for h in L.hazards %}<li>{{ h }}</li>{% endfor %}</ul></div>
+      {% endif %}
+      {% if L.services_needed %}
+      <div class="card"><h3>Services</h3><p>{{ L.services_needed|join(', ')|upper }}</p></div>
+      {% endif %}
+      {% if L.callback_number or L.caller_name %}
+      <div class="card"><h3>Caller</h3>
+        <p>{{ L.caller_name or 'Name not given' }}<br>{{ L.callback_number or 'No callback number' }}</p></div>
+      {% endif %}
     </div>
 
     <div class="response-suggestions section">
-      <h2>📋 Recommended Actions</h2>
+      <h2>Recommended actions</h2>
       {% for suggestion in emergency_response.suggestions %}
       <div class="suggestion-item">
         {{ suggestion }}
@@ -54,8 +143,13 @@
     </div>
 
     <div class="section">
-      <h2>📝 Transcription</h2>
-      <p>{{ transcription }}</p>
+      <h2>Transcript</h2>
+      {% if asr %}
+      <p class="meta">{{ asr.model }} · {{ asr.device }}{% if asr.mean_logprob %} ·
+        mean confidence {{ '%.2f'|format(asr.mean_logprob) }}{% endif %}
+        {%- if asr.degraded %} · <span class="warn-text">{{ asr.degraded }}</span>{% endif %}</p>
+      {% endif %}
+      <p class="transcript">{{ transcription }}</p>
     </div>
 
     {% if summary and summary|length > 0 %}
@@ -65,18 +159,24 @@
     </div>
     {% endif %}
 
+    {% if emergency_response.signals %}
     <div class="section">
-      <h2>🎯 Matched Command</h2>
-      <p>{{ best_match }} (Confidence: {{ "%.2f"|format(score) }})</p>
-    </div>
-
-    <div class="section">
-      <h2>👥 Named Entities</h2>
+      <h2>Phrases matched in the transcript</h2>
+      <p class="meta">Keyword matches, not judgements. Listed so an advisory can
+         be traced to the words that raised it.</p>
       <ul>
-        {% for entity in entities %}
-        <li>{{ entity.text }} ({{ entity.label }})</li>
+        {% for group, words in emergency_response.signals.items() %}
+        <li><strong>{{ group|title }}:</strong> {{ words|join(', ') }}</li>
         {% endfor %}
       </ul>
+    </div>
+    {% endif %}
+
+    <div class="section">
+      <h2>Named entities</h2>
+      <p class="entities">
+        {% for entity in entities %}<span class="tag" title="{{ entity.label }}">{{ entity.text }}<em>{{ entity.label }}</em></span>{% endfor %}
+      </p>
     </div>
 
     {% set plot_titles = {'waveform': '📊 Waveform', 'mfcc': '🎵 MFCC',
