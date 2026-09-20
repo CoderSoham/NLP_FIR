@@ -13,12 +13,15 @@ transformers==4.41.2
 huggingface-hub==0.23.2
 sentence-transformers==2.6.1
 spacy==3.7.4
-fpdf==1.7.2
 # faster-whisper (CTranslate2) rather than openai-whisper: several times faster
 # at the same weights with int8, and that speed is what makes a large model
 # affordable. Accuracy on telephone audio is dominated by model size.
 faster-whisper==1.2.1
 scipy==1.11.4
+# fpdf2, not the abandoned fpdf 1.7.2. The old one is core-font only,
+# so every curly apostrophe Whisper emits was silently deleted from the
+# report -- "don't" was printed as "dont" and every bullet vanished.
+fpdf2==2.8.4
 tqdm==4.66.4
 python-dotenv==1.0.1
 gunicorn==21.2.0

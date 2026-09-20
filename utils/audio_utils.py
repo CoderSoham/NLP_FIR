@@ -9,7 +9,6 @@ from matplotlib.ticker import MaxNLocator
 import numpy as np
 from sentence_transformers import SentenceTransformer, util
 import spacy
-from fpdf import FPDF
 import librosa.display
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 import re
@@ -234,9 +233,6 @@ def load_emotion_detector():
     return EMOTION_DETECTOR
 
 # Sanitize Unicode for fpdf
-def sanitize_text(text):
-    return text.encode('latin-1', errors='ignore').decode('latin-1')
-
 def clean_summary(text):
     # Remove extra whitespace
     text = re.sub(r'\s+', ' ', text).strip()
@@ -867,92 +863,11 @@ def generate_visualizations(audio, sr, output_folder, report_id):
 
 
 def generate_fir_pdf(data):
-    """Generate advanced PDF report"""
-    pdf = FPDF()
-    pdf.add_page()
-    
-    # Header
-    pdf.set_font("Arial", 'B', 16)
-    pdf.multi_cell(0, 10, sanitize_text("🚨 Emergency Response Report\n\n"))
-    pdf.set_font("Arial", size=12)
-    
-    # Timestamp
-    pdf.multi_cell(0, 10, sanitize_text(f"Generated at: {data['timestamp']}\n\n"))
-    
-    # Emergency Analysis
-    pdf.set_font("Arial", 'B', 14)
-    pdf.multi_cell(0, 10, sanitize_text("Emergency Analysis\n"))
-    pdf.set_font("Arial", size=12)
-    pdf.multi_cell(0, 10, sanitize_text(f"Type: {data['emergency_type'].title()}"))
-    pdf.multi_cell(0, 10, sanitize_text(f"Severity: {data['severity'].title()}"))
-    pdf.multi_cell(0, 10, sanitize_text(f"Priority: {data['response']['priority'].title()}"))
-    # Labelled as a protocol target, not an ETA. It comes from the priority
-    # alone and has nothing to do with the station or the caller's location; the
-    # report used to print it beside the dispatch ETA as if they were comparable.
-    pdf.multi_cell(0, 10, sanitize_text(
-        f"Protocol target for this priority: {data['response']['estimated_response_time']} minutes"))
+    """Write the incident report. The document lives in utils.fir_pdf.
 
-    dispatch = data.get('dispatch') or {}
-    if dispatch.get('basis') == 'location_match':
-        eta = dispatch.get('eta_min')
-        pdf.multi_cell(0, 10, sanitize_text(
-            f"Nearest station: {dispatch.get('station')} (matched on "
-            f"'{dispatch.get('matched_on')}')"
-            + (f", ETA {eta} minutes" if eta else "")))
-    elif dispatch.get('station'):
-        pdf.multi_cell(0, 10, sanitize_text(
-            f"Nearest station: {dispatch.get('station')} - no location identified "
-            "in the call, so this is the default for this emergency type. No ETA."))
-
-    if data.get('truncated'):
-        pdf.multi_cell(0, 10, sanitize_text(
-            f"PARTIAL ANALYSIS: only the first {data.get('analysed_duration_s')}s "
-            f"of a {data.get('source_duration_s')}s recording was analysed."))
-    
-    # Emotional Analysis
-    pdf.set_font("Arial", 'B', 14)
-    pdf.multi_cell(0, 10, sanitize_text("\nEmotional Analysis\n"))
-    pdf.set_font("Arial", size=12)
-    pdf.multi_cell(0, 10, sanitize_text(f"Sentiment: {data['sentiment']['label']} (Confidence: {data['sentiment']['score']:.2f})"))
-    pdf.multi_cell(0, 10, sanitize_text(f"Emotion: {data['emotion']['label']} (Confidence: {data['emotion']['score']:.2f})\n"))
-    
-    # Recommended Actions
-    pdf.set_font("Arial", 'B', 14)
-    pdf.multi_cell(0, 10, sanitize_text("\nRecommended Actions\n"))
-    pdf.set_font("Arial", size=12)
-    for suggestion in data['response']['suggestions']:
-        pdf.multi_cell(0, 10, sanitize_text(f"• {suggestion}"))
-
-    signals = data['response'].get('signals') or {}
-    if signals:
-        pdf.multi_cell(0, 10, sanitize_text(
-            "\nSome actions above were added because these words appeared in the "
-            "transcript. They are keyword matches, not judgements:"))
-        for group, words in signals.items():
-            pdf.multi_cell(0, 10, sanitize_text(f"• {group}: {', '.join(words)}"))
-    
-    # Required Resources
-    pdf.multi_cell(0, 10, sanitize_text("\nRequired Resources:"))
-    for resource in data['response']['required_resources']:
-        pdf.multi_cell(0, 10, sanitize_text(f"• {resource.replace('_', ' ').title()}"))
-    
-    # Transcription
-    pdf.set_font("Arial", 'B', 14)
-    pdf.multi_cell(0, 10, sanitize_text("\nTranscription\n"))
-    pdf.set_font("Arial", size=12)
-    pdf.multi_cell(0, 10, sanitize_text(f"{data['transcription']}\n"))
-    
-    # Summary
-    pdf.set_font("Arial", 'B', 14)
-    pdf.multi_cell(0, 10, sanitize_text("\nSummary\n"))
-    pdf.set_font("Arial", size=12)
-    pdf.multi_cell(0, 10, sanitize_text(f"{data['summary']}\n"))
-    
-    # One file per report. This used to write a single shared
-    # `processed/fir_report.pdf`, so two concurrent callers overwrote each
-    # other and /download_fir served whichever finished last -- one caller
-    # could download another caller's report. It also ignored PROCESSED_FOLDER.
-    os.makedirs(PROCESSED_FOLDER, exist_ok=True)
-    out_path = os.path.join(PROCESSED_FOLDER, f"fir_{data['report_id']}.pdf")
-    pdf.output(out_path)
-    return out_path
+    Kept as a thin wrapper because app.py, the tests and the API route all
+    import this name, and the layout has no business in a module that also
+    loads eight models.
+    """
+    from utils import fir_pdf
+    return fir_pdf.generate(data, PROCESSED_FOLDER)

@@ -17,7 +17,11 @@
     <p class="tagline">Upload an emergency call recording for transcription, triage and an incident report.</p>
 
     <div class="upload-form">
-      <form method="post" enctype="multipart/form-data">
+      <!-- An explicit action. Without one the form posts to the current URL,
+           which on /result/<job_id> is a GET-only route -- so uploading a
+           second recording from a result page returned 405. -->
+      <form method="post" action="{{ url_for('index') }}"
+            enctype="multipart/form-data">
         <input type="file" name="audio_file" accept="audio/*" required>
         <button type="submit">Process Audio</button>
       </form>

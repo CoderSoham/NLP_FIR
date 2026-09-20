@@ -115,3 +115,28 @@ def test_an_unknown_job_is_404(pipeline):
     absent = "d" * 32
     assert pipeline.client.get(f"/api/jobs/{absent}").status_code == 404
     assert pipeline.client.get(f"/result/{absent}").status_code == 404
+
+
+def test_the_upload_form_posts_to_the_upload_route(pipeline):
+    """A result page lives at /result/<id>, which is GET-only.
+
+    The form had no action, so it posted to the current URL and a second
+    upload from a result page returned 405 Method Not Allowed.
+    """
+    import re
+
+    from conftest import upload
+
+    body = upload(pipeline.client).get_data(as_text=True)
+    action = re.search(r'<form[^>]*action="([^"]*)"', body)
+    assert action, "the upload form must name the route it posts to"
+    assert action.group(1) == "/"
+
+
+def test_a_second_upload_from_a_result_page_works(pipeline):
+    from conftest import upload
+
+    first = upload(pipeline.client)
+    assert first.status_code == 200
+    second = upload(pipeline.client)
+    assert second.status_code == 200
