@@ -1,0 +1,11 @@
+# Four files were committed with CRLF and the rest of the tree with LF, so any
+# editor that normalises on save produced a whole-file diff and buried the real
+# change in it. Normalise text in the repository and let checkout match the
+# platform.
+* text=auto
+
+# Binary, so never touched.
+*.png binary
+*.mp3 binary
+*.wav binary
+*.pdf binary
