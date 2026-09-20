@@ -1,0 +1,810 @@
+{
+  "backend": "groq",
+  "model": "openai/gpt-oss-20b @ groq",
+  "load_seconds": 0.0,
+  "passed": 46,
+  "total": 54,
+  "rows": [
+    {
+      "sample": "call_206.mp3",
+      "seconds": 1.9,
+      "checks": {
+        "incident_type": {
+          "expected": "accident",
+          "got": "accident",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= high",
+          "got": "low",
+          "pass": true
+        },
+        "weapons": {
+          "expected": false,
+          "got": [],
+          "pass": true
+        },
+        "location": {
+          "expected": "75",
+          "got": "I-75",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 6,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "accident",
+        "severity": "low",
+        "is_in_progress": true,
+        "location": "I-75",
+        "callback_number": null,
+        "caller_name": "Mary Good first",
+        "people_involved": null,
+        "injuries": [],
+        "weapons": [],
+        "hazards": [],
+        "vehicles": [
+          "vehicle"
+        ],
+        "services_needed": [
+          "ems"
+        ],
+        "immediate_actions": [
+          "Dispatch EMS to I-75 southbound near Gainesville.",
+          "Hold on."
+        ],
+        "summary": "Caller reports a vehicle collision on I-75 southbound near Gainesville, with no injuries. Dispatcher will dispatch EMS to the scene. Caller is out of the roadway and in fog.",
+        "uncertainties": [
+          "Exact location on I-75 (mile marker) not provided.",
+          "Phone number not provided.",
+          "Number of people involved not stated.",
+          "Whether there was another vehicle involved is unclear.",
+          "Whether the guardrail was hit by the caller's vehicle or another is unclear.",
+          "Whether there were injuries is unclear beyond the caller's statement."
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "groq",
+        "model": "openai/gpt-oss-20b @ groq"
+      }
+    },
+    {
+      "sample": "call_21.mp3",
+      "seconds": 1.8,
+      "checks": {
+        "incident_type": {
+          "expected": "police",
+          "got": "other",
+          "pass": false
+        },
+        "severity": {
+          "expected": "<= medium",
+          "got": "low",
+          "pass": true
+        },
+        "weapons": {
+          "expected": false,
+          "got": [],
+          "pass": true
+        },
+        "location": {
+          "expected": "24th",
+          "got": "24th Street",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 4,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "other",
+        "severity": "low",
+        "is_in_progress": true,
+        "location": "24th Street",
+        "callback_number": null,
+        "caller_name": null,
+        "people_involved": 1,
+        "injuries": [],
+        "weapons": [],
+        "hazards": [
+          "water"
+        ],
+        "vehicles": [
+          "Jeep"
+        ],
+        "services_needed": [
+          "police"
+        ],
+        "immediate_actions": [
+          "Call the car wash manager",
+          "Call the number on the wall",
+          "Attempt to contact owner",
+          "Encourage caller to stay inside until help arrives"
+        ],
+        "summary": "Caller is stuck inside a self\u2011service car wash on 24th Street, unable to open the doors. Dispatcher is attempting to contact the car wash manager and the number on the wall to get the caller out. Police may be needed to break the door if necessary.",
+        "uncertainties": [
+          "The exact name of the car wash is unclear; caller says 'Best Auto Wash' but uncertain.",
+          "The caller's phone number is not provided.",
+          "The caller's exact location relative to landmarks is vague.",
+          "The transcript contains garbled sections and repeated phrases."
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "groq",
+        "model": "openai/gpt-oss-20b @ groq"
+      }
+    },
+    {
+      "sample": "call_24.mp3",
+      "seconds": 32.1,
+      "checks": {
+        "incident_type": {
+          "expected": "police",
+          "got": "unknown",
+          "pass": false
+        },
+        "severity": {
+          "expected": "<= critical",
+          "got": "unknown",
+          "pass": true
+        },
+        "weapons": {
+          "expected": true,
+          "got": [
+            "handgun"
+          ],
+          "pass": true
+        },
+        "location": {
+          "expected": "Bannister",
+          "got": "1331 Bannister Road",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 5,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": {
+            "incident_type": [
+              {
+                "type": "police",
+                "enum": [
+                  "medical",
+                  "fire",
+                  "police",
+                  "accident",
+                  "other",
+                  "unknown"
+                ],
+                "description": "The primary emergency category."
+              },
+              "police, ['medical', 'fire', 'police', 'accident', 'other', 'unknown'], The primary emergency category."
+            ],
+            "severity": [
+              {
+                "type": "critical",
+                "enum": [
+                  "critical",
+                  "high",
+                  "medium",
+                  "low",
+                  "unknown"
+                ],
+                "description": "Immediate risk to life. critical = someone is dying now (not breathing, severe bleeding, active violence). low = no injury and no ongoing threat."
+              },
+              "critical, ['critical', 'high', 'medium', 'low', 'unknown'], Immediate risk to life. critical = someone is dying now (not breathing, severe bleeding, active violence). low = no injury and no ongoing threat."
+            ],
+            "weapons": [
+              {
+                "item": "revolver",
+                "quote": "revolver",
+                "reason": "quote not found in transcript"
+              }
+            ]
+          },
+          "pass": false
+        }
+      },
+      "record": {
+        "incident_type": "unknown",
+        "severity": "unknown",
+        "is_in_progress": true,
+        "location": "1331 Bannister Road",
+        "callback_number": null,
+        "caller_name": null,
+        "people_involved": 2,
+        "injuries": [
+          "right arm",
+          "shot"
+        ],
+        "weapons": [
+          {
+            "item": "handgun",
+            "quote": "high standard .22"
+          }
+        ],
+        "hazards": [],
+        "vehicles": [
+          "red automobile",
+          "maroon Oldsmobile"
+        ],
+        "services_needed": [
+          "police",
+          "ems"
+        ],
+        "immediate_actions": [
+          "Seal area off",
+          "Cut parking lot to Valero station and Lydia",
+          "Call K-9",
+          "Dispatch two more cars",
+          "Cordon off area"
+        ],
+        "summary": "An officer was shot at 1331 Bannister Road. The suspect, a white male in his 50s, is armed with a .22 and a revolver and may still be in a red automobile. Police and EMS are dispatched, and the area is being cordoned off while K-9 units are called out.",
+        "uncertainties": [
+          "Unclear if suspect is still in vehicle",
+          "Unclear if officer is still injured",
+          "Unclear if suspect has additional weapons",
+          "Unclear if K-9 has been deployed",
+          "Unclear if all cars have arrived"
+        ],
+        "_rejected": {
+          "incident_type": [
+            {
+              "type": "police",
+              "enum": [
+                "medical",
+                "fire",
+                "police",
+                "accident",
+                "other",
+                "unknown"
+              ],
+              "description": "The primary emergency category."
+            },
+            "police, ['medical', 'fire', 'police', 'accident', 'other', 'unknown'], The primary emergency category."
+          ],
+          "severity": [
+            {
+              "type": "critical",
+              "enum": [
+                "critical",
+                "high",
+                "medium",
+                "low",
+                "unknown"
+              ],
+              "description": "Immediate risk to life. critical = someone is dying now (not breathing, severe bleeding, active violence). low = no injury and no ongoing threat."
+            },
+            "critical, ['critical', 'high', 'medium', 'low', 'unknown'], Immediate risk to life. critical = someone is dying now (not breathing, severe bleeding, active violence). low = no injury and no ongoing threat."
+          ],
+          "weapons": [
+            {
+              "item": "revolver",
+              "quote": "revolver",
+              "reason": "quote not found in transcript"
+            }
+          ]
+        }
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "groq",
+        "model": "openai/gpt-oss-20b @ groq"
+      }
+    },
+    {
+      "sample": "call_456.mp3",
+      "seconds": 9.2,
+      "checks": {
+        "incident_type": {
+          "expected": "police",
+          "got": "police",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= critical",
+          "got": "high",
+          "pass": true
+        },
+        "weapons": {
+          "expected": true,
+          "got": [
+            "gun"
+          ],
+          "pass": true
+        },
+        "location": {
+          "expected": "Alameda",
+          "got": "1109 East Alameda",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 5,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "police",
+        "severity": "high",
+        "is_in_progress": true,
+        "location": "1109 East Alameda",
+        "callback_number": "970-209-6887",
+        "caller_name": "Edwin Waters",
+        "people_involved": 3,
+        "injuries": [
+          "hurt bad"
+        ],
+        "weapons": [
+          {
+            "item": "gun",
+            "quote": "Do you still have the gun in your hand?"
+          }
+        ],
+        "hazards": [],
+        "vehicles": [],
+        "services_needed": [
+          "police",
+          "ems"
+        ],
+        "immediate_actions": [
+          "Please hurry.",
+          "Please come quick.",
+          "We're going to get him out there."
+        ],
+        "summary": "Caller reports a shooting at 1109 East Alameda. Victim is down and injured. Police and EMS are needed.",
+        "uncertainties": [
+          "The exact address was unclear until final verification.",
+          "The victim's breathing status is unknown.",
+          "The presence of the gun at the scene is uncertain.",
+          "The number of people at the scene is unclear.",
+          "The severity of injuries is not fully described."
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "groq",
+        "model": "openai/gpt-oss-20b @ groq"
+      }
+    },
+    {
+      "sample": "call_572.mp3",
+      "seconds": 32.2,
+      "checks": {
+        "incident_type": {
+          "expected": "police",
+          "got": "police",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= critical",
+          "got": "critical",
+          "pass": true
+        },
+        "weapons": {
+          "expected": true,
+          "got": [],
+          "pass": false
+        },
+        "location": {
+          "expected": "Arizona",
+          "got": "Air Walk Arizona",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 6,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "police",
+        "severity": "critical",
+        "is_in_progress": true,
+        "location": "Air Walk Arizona",
+        "callback_number": null,
+        "caller_name": null,
+        "people_involved": null,
+        "injuries": [
+          "bleeding out of her mouth",
+          "shot"
+        ],
+        "weapons": [],
+        "hazards": [],
+        "vehicles": [],
+        "services_needed": [
+          "police",
+          "ems"
+        ],
+        "immediate_actions": [],
+        "summary": "Caller reports husband and daughter shot, daughter bleeding out of mouth. Incident ongoing with assailants returning. Police and EMS required.",
+        "uncertainties": [
+          "Location 'Air Walk Arizona' is unclear and may be garbled.",
+          "Number of assailants not specified.",
+          "Whether the caller is still alive is uncertain.",
+          "The transcript contains garbled speech and repeated phrases.",
+          "No weapon type specified.",
+          "No callback number or caller name provided."
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "groq",
+        "model": "openai/gpt-oss-20b @ groq"
+      }
+    },
+    {
+      "sample": "call_589.mp3",
+      "seconds": 33.0,
+      "checks": {
+        "incident_type": {
+          "expected": "medical",
+          "got": "medical",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= critical",
+          "got": "critical",
+          "pass": true
+        },
+        "weapons": {
+          "expected": false,
+          "got": [],
+          "pass": true
+        },
+        "location": {
+          "expected": null,
+          "got": null,
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 8,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "medical",
+        "severity": "critical",
+        "is_in_progress": true,
+        "location": null,
+        "callback_number": null,
+        "caller_name": "Jolene Harvey",
+        "people_involved": 2,
+        "injuries": [
+          "not breathing"
+        ],
+        "weapons": [],
+        "hazards": [],
+        "vehicles": [],
+        "services_needed": [
+          "ems"
+        ],
+        "immediate_actions": [
+          "Ask caller to sit down.",
+          "Dispatch EMS to caller's location."
+        ],
+        "summary": "Caller reports a 60\u2011year\u2011old male who is not breathing and is cold and stiff. Caller is at a neighbor\u2019s house and is attempting CPR. EMS is dispatched to the location.",
+        "uncertainties": [
+          "Location not provided.",
+          "Phone number not provided.",
+          "Caller name may be Jolene Harvey but transcript is garbled.",
+          "Exact address unknown.",
+          "Transcript ends abruptly.",
+          "Mention of \u2018gang area\u2019 is unclear.",
+          "Mention of \u2018Apex police\u2019 is unclear.",
+          "Mention of \u2018he doesn\u2019t want to die of his lymphoma\u2019 is unclear."
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "groq",
+        "model": "openai/gpt-oss-20b @ groq"
+      }
+    },
+    {
+      "sample": "call_645.mp3",
+      "seconds": 15.7,
+      "checks": {
+        "incident_type": {
+          "expected": "police",
+          "got": "police",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= high",
+          "got": "high",
+          "pass": true
+        },
+        "weapons": {
+          "expected": false,
+          "got": [],
+          "pass": true
+        },
+        "location": {
+          "expected": "Winter Garden",
+          "got": null,
+          "pass": false
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 5,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "police",
+        "severity": "high",
+        "is_in_progress": true,
+        "location": null,
+        "callback_number": null,
+        "caller_name": null,
+        "people_involved": 3,
+        "injuries": [],
+        "weapons": [],
+        "hazards": [],
+        "vehicles": [],
+        "services_needed": [
+          "police"
+        ],
+        "immediate_actions": [
+          "Stay on the phone with dispatcher",
+          "Dispatch police to location"
+        ],
+        "summary": "Caller reports a burglary with suspects inside a neighbor\u2019s house. Victim is bound and feet tied, posing an immediate threat. Police are being dispatched to the scene.",
+        "uncertainties": [
+          "Caller did not provide a specific address or location; \"Lake Robert Slandering, Winter Garden\" may be a name or location but is unclear.",
+          "Caller\u2019s identity is not confirmed; \"Lake Robert Slandering\" could be a location or a person.",
+          "Number of suspects is not specified beyond \"these people\"; exact count is uncertain.",
+          "Whether police are already en route is implied but not confirmed.",
+          "The transcript contains garbled and incomplete statements, making several details ambiguous."
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "groq",
+        "model": "openai/gpt-oss-20b @ groq"
+      }
+    },
+    {
+      "sample": "call_9.mp3",
+      "seconds": 32.5,
+      "checks": {
+        "incident_type": {
+          "expected": "police",
+          "got": "police",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= medium",
+          "got": "high",
+          "pass": false
+        },
+        "weapons": {
+          "expected": false,
+          "got": [],
+          "pass": true
+        },
+        "location": {
+          "expected": "Court",
+          "got": "7th Street Court",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 5,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "police",
+        "severity": "high",
+        "is_in_progress": true,
+        "location": "7th Street Court",
+        "callback_number": "605",
+        "caller_name": "Mike Forbus",
+        "people_involved": 2,
+        "injuries": [],
+        "weapons": [],
+        "hazards": [],
+        "vehicles": [],
+        "services_needed": [
+          "police"
+        ],
+        "immediate_actions": [
+          "Dispatch police officers to the scene."
+        ],
+        "summary": "Caller reports a fight between two teenage daughters at 7th Street Court. Police officers are being dispatched to the scene. Caller is named Mike Forbus, phone number 605.",
+        "uncertainties": [
+          "Caller\u2019s phone number is incomplete (only '605' provided).",
+          "Exact address beyond '7th Street Court' is not provided.",
+          "The ages of the daughters are unclear (12 and 13.5, 12 and 14, etc.).",
+          "The transcript contains garbled or missing portions.",
+          "The call may have ended abruptly."
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "groq",
+        "model": "openai/gpt-oss-20b @ groq"
+      }
+    },
+    {
+      "sample": "call_93.mp3",
+      "seconds": 4.4,
+      "checks": {
+        "incident_type": {
+          "expected": "medical",
+          "got": "unknown",
+          "pass": false
+        },
+        "severity": {
+          "expected": "<= critical",
+          "got": "unknown",
+          "pass": true
+        },
+        "weapons": {
+          "expected": false,
+          "got": [],
+          "pass": true
+        },
+        "location": {
+          "expected": "52",
+          "got": "52-10-5-1",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 5,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": {
+            "incident_type": [
+              {
+                "type": "medical",
+                "enum": [
+                  "medical",
+                  "fire",
+                  "police",
+                  "accident",
+                  "other",
+                  "unknown"
+                ],
+                "description": "The primary emergency category."
+              },
+              "medical, ['medical', 'fire', 'police', 'accident', 'other', 'unknown'], The primary emergency category."
+            ],
+            "severity": [
+              {
+                "type": "critical",
+                "enum": [
+                  "critical",
+                  "high",
+                  "medium",
+                  "low",
+                  "unknown"
+                ],
+                "description": "Immediate risk to life. critical = someone is dying now (not breathing, severe bleeding, active violence). low = no injury and no ongoing threat."
+              },
+              "critical, ['critical', 'high', 'medium', 'low', 'unknown'], Immediate risk to life. critical = someone is dying now (not breathing, severe bleeding, active violence). low = no injury and no ongoing threat."
+            ]
+          },
+          "pass": false
+        }
+      },
+      "record": {
+        "incident_type": "unknown",
+        "severity": "unknown",
+        "is_in_progress": true,
+        "location": "52-10-5-1",
+        "callback_number": "539-2443",
+        "caller_name": null,
+        "people_involved": 2,
+        "injuries": [
+          "choking",
+          "not breathing"
+        ],
+        "weapons": [],
+        "hazards": [],
+        "vehicles": [],
+        "services_needed": [
+          "ems"
+        ],
+        "immediate_actions": [
+          "dispatch Heimlich maneuver"
+        ],
+        "summary": "Caller reports a choking victim who is not breathing and is located at address 52-10-5-1. The dispatcher has dispatched a Heimlich maneuver and is awaiting ambulance arrival. The situation is critical and ongoing.",
+        "uncertainties": [
+          "Address 52-10-5-1 may be incomplete or incorrect",
+          "Unclear what the victim is choking on",
+          "Unclear meaning of \"socket behind her\"",
+          "Unclear what \"she's peeing her pants out\" refers to",
+          "Transcript contains garbled or incomplete statements"
+        ],
+        "_rejected": {
+          "incident_type": [
+            {
+              "type": "medical",
+              "enum": [
+                "medical",
+                "fire",
+                "police",
+                "accident",
+                "other",
+                "unknown"
+              ],
+              "description": "The primary emergency category."
+            },
+            "medical, ['medical', 'fire', 'police', 'accident', 'other', 'unknown'], The primary emergency category."
+          ],
+          "severity": [
+            {
+              "type": "critical",
+              "enum": [
+                "critical",
+                "high",
+                "medium",
+                "low",
+                "unknown"
+              ],
+              "description": "Immediate risk to life. critical = someone is dying now (not breathing, severe bleeding, active violence). low = no injury and no ongoing threat."
+            },
+            "critical, ['critical', 'high', 'medium', 'low', 'unknown'], Immediate risk to life. critical = someone is dying now (not breathing, severe bleeding, active violence). low = no injury and no ongoing threat."
+          ]
+        }
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "groq",
+        "model": "openai/gpt-oss-20b @ groq"
+      }
+    }
+  ]
+}

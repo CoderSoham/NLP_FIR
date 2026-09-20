@@ -1,0 +1,674 @@
+{
+  "backend": "nvidia",
+  "model": "nvidia/nemotron-3-super-120b-a12b @ nvidia",
+  "load_seconds": 0.0,
+  "passed": 44,
+  "total": 48,
+  "rows": [
+    {
+      "sample": "call_206.mp3",
+      "seconds": 15.0,
+      "checks": {
+        "incident_type": {
+          "expected": "accident",
+          "got": "accident",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= high",
+          "got": "low",
+          "pass": true
+        },
+        "weapons": {
+          "expected": false,
+          "got": [],
+          "pass": true
+        },
+        "location": {
+          "expected": "75",
+          "got": null,
+          "pass": false
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 7,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "accident",
+        "severity": "low",
+        "is_in_progress": false,
+        "location": null,
+        "callback_number": null,
+        "caller_name": null,
+        "people_involved": null,
+        "injuries": [],
+        "weapons": [],
+        "hazards": [],
+        "vehicles": [
+          "vehicle"
+        ],
+        "services_needed": [
+          "police"
+        ],
+        "immediate_actions": [
+          "Request location details (road, mile marker, direction)",
+          "Confirm caller is out of roadway",
+          "Check for injuries",
+          "Obtain vehicle description (color, make, model)",
+          "Dispatch police assistance"
+        ],
+        "summary": "Caller reports striking a guardrail on southbound I-75 near Gainesville in dense fog, with a possible second collision behind them; no injuries are reported and the caller is out of the roadway. They request assistance for the disabled vehicle.",
+        "uncertainties": [
+          "Exact mile marker or precise location on I-75",
+          "Whether another vehicle was involved in a second collision",
+          "Make, model, and color of the caller's vehicle",
+          "Caller's name and callback phone number",
+          "Whether any occupants in other vehicle(s) are injured",
+          "Clarity of the phrase 'Mary Good first.' (possible name or misheard)",
+          "Exact severity of fog and visibility conditions"
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "nvidia",
+        "model": "nvidia/nemotron-3-super-120b-a12b @ nvidia"
+      }
+    },
+    {
+      "sample": "call_21.mp3",
+      "seconds": 70.1,
+      "checks": {
+        "incident_type": {
+          "expected": "police",
+          "got": "other",
+          "pass": false
+        },
+        "severity": {
+          "expected": "<= medium",
+          "got": "low",
+          "pass": true
+        },
+        "weapons": {
+          "expected": false,
+          "got": [],
+          "pass": true
+        },
+        "location": {
+          "expected": "24th",
+          "got": "24th Street",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 10,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "other",
+        "severity": "low",
+        "is_in_progress": true,
+        "location": "24th Street",
+        "callback_number": null,
+        "caller_name": null,
+        "people_involved": null,
+        "injuries": [],
+        "weapons": [],
+        "hazards": [
+          "water"
+        ],
+        "vehicles": [
+          "Jeep"
+        ],
+        "services_needed": [
+          "police"
+        ],
+        "immediate_actions": [
+          "Hold on",
+          "Do not hang up",
+          "Try to locate the car wash",
+          "Attempt to contact the car wash owner",
+          "Call for assistance"
+        ],
+        "summary": "Caller reports being trapped inside a self-serve car wash on 24th Street across from Mueller Brass while driving a Jeep; the car wash doors are shut and a soak cycle is running. No injuries are reported, but the caller is frightened and unable to exit. The dispatcher is attempting to locate the business and contact its owner to arrange help.",
+        "uncertainties": [
+          "Exact street address (no number provided)",
+          "Exact name of car wash (caller uncertain, gave 'Best Auto Wash' but unclear)",
+          "Phone numbers called by caller (garbled: '92', '586', '949-8440')",
+          "Number of other people present (caller mentions a guy behind and people on other side, but no exact count)",
+          "Whether the caller has fully exited the car wash building",
+          "Whether any injuries have occurred",
+          "Whether any hazards beyond water (e.g., electrical, gas) are present",
+          "Whether any weapons are present",
+          "Whether the car wash is still operating or the doors are locked",
+          "Whether emergency services can physically access the location"
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "nvidia",
+        "model": "nvidia/nemotron-3-super-120b-a12b @ nvidia"
+      }
+    },
+    {
+      "sample": "call_24.mp3",
+      "seconds": 29.8,
+      "checks": {
+        "incident_type": {
+          "expected": "police",
+          "got": "police",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= critical",
+          "got": "critical",
+          "pass": true
+        },
+        "weapons": {
+          "expected": true,
+          "got": [
+            "gun",
+            "gun",
+            "gun",
+            "revolver",
+            "revolver",
+            "gun"
+          ],
+          "pass": true
+        },
+        "location": {
+          "expected": "Bannister",
+          "got": "1331 Bannister Road",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 8,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "police",
+        "severity": "critical",
+        "is_in_progress": true,
+        "location": "1331 Bannister Road",
+        "callback_number": null,
+        "caller_name": null,
+        "people_involved": null,
+        "injuries": [
+          "shot through the right arm"
+        ],
+        "weapons": [
+          {
+            "item": "gun",
+            "quote": "He shot me through the right arm"
+          },
+          {
+            "item": "gun",
+            "quote": "I disarmed one gun coming, and he had another one."
+          },
+          {
+            "item": "gun",
+            "quote": "He might be armed with another gun"
+          },
+          {
+            "item": "revolver",
+            "quote": "I disarmed one of them off of him. It looked like a high standard .22, and then he pulled a revolver on me, and then I unloaded on him."
+          },
+          {
+            "item": "revolver",
+            "quote": "the revolver is up on Lydia."
+          },
+          {
+            "item": "gun",
+            "quote": "He may have another gun with him since he's carrying multiple weapons."
+          }
+        ],
+        "hazards": [],
+        "vehicles": [
+          "maroon old 302 Young John Adams",
+          "red automobile",
+          "maroon Oldsmobile",
+          "92 Old Cutlass Sierra, Maroon Color"
+        ],
+        "services_needed": [
+          "police",
+          "ems"
+        ],
+        "immediate_actions": [
+          "Hold the air",
+          "Ask for caller location",
+          "Dispatch units to 1331 Bannister Road",
+          "Request additional police cars",
+          "Request K-9 unit",
+          "Establish perimeter",
+          "Seal area off",
+          "Cut parking lot to Valero station",
+          "Put out citywide alert for vehicle",
+          "Verify west perimeter",
+          "Put out tone for K-9"
+        ],
+        "summary": "Officer shot in the right arm at 1331 Bannister Road; suspect is a white male in his 50s, possibly armed with multiple weapons, last seen southbound on Lydia from Bannister. Officers are pursuing, requesting K-9 and additional units to contain the suspect and secure the scene.",
+        "uncertainties": [
+          "Exact incident address (1331 Bannister Road vs 1331 East Bannister)",
+          "Whether the suspect is still in the vehicle or on foot",
+          "Number of weapons the suspect currently possesses",
+          "Whether the suspect was hit by officer's gunfire",
+          "Exact number of people at the scene",
+          "Clarity of garbled phrases such as '1331 East Spanish' and '230s in the round'",
+          "Whether the suspect's vehicle has been located",
+          "Status of K-9 deployment"
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "nvidia",
+        "model": "nvidia/nemotron-3-super-120b-a12b @ nvidia"
+      }
+    },
+    {
+      "sample": "call_456.mp3",
+      "seconds": 31.8,
+      "checks": {
+        "incident_type": {
+          "expected": "police",
+          "got": "police",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= critical",
+          "got": "high",
+          "pass": true
+        },
+        "weapons": {
+          "expected": true,
+          "got": [
+            "gun"
+          ],
+          "pass": true
+        },
+        "location": {
+          "expected": "Alameda",
+          "got": "1109 East Alameda",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 8,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "police",
+        "severity": "high",
+        "is_in_progress": false,
+        "location": "1109 East Alameda",
+        "callback_number": "970-209-6887",
+        "caller_name": "Edwin Waters",
+        "people_involved": 3,
+        "injuries": [
+          "hurt bad"
+        ],
+        "weapons": [
+          {
+            "item": "gun",
+            "quote": "I do not have it set on the table right here where I am."
+          }
+        ],
+        "hazards": [],
+        "vehicles": [],
+        "services_needed": [
+          "police",
+          "ems"
+        ],
+        "immediate_actions": [
+          "Dispatch police and EMS to 1109 East Alameda",
+          "Verify address (1109 East Alameda)",
+          "Confirm gun is set on table and not in hand",
+          "Instruct caller to stay calm and remain on line"
+        ],
+        "summary": "Caller reports a shooting at 1109 East Alameda; the victim is down and hurt badly. The caller says they shot the attacker and have placed the gun on a table. Police and EMS are en route; the caller is advised to stay calm and keep the gun secured.",
+        "uncertainties": [
+          "Exact nature and severity of the victim's injuries (e.g., gunshot wound, bleeding) not confirmed",
+          "Whether the victim is breathing or awake",
+          "Patient's age is only a guess (approximately 45)",
+          "Whether any other individuals are present besides the caller, victim, and victim's brother",
+          "Whether any hazards such as fire, gas, or structural dangers exist",
+          "Whether any additional weapons besides the gun are present",
+          "Address clarity: caller gave both West and East Alameda before confirming East Alameda",
+          "Initial phrase 'PENF-A911' may be garbled or unclear"
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "nvidia",
+        "model": "nvidia/nemotron-3-super-120b-a12b @ nvidia"
+      }
+    },
+    {
+      "sample": "call_572.mp3",
+      "error": {
+        "status": "failed",
+        "backend": "nvidia",
+        "reason": "unterminated JSON object in model output"
+      }
+    },
+    {
+      "sample": "call_589.mp3",
+      "seconds": 30.5,
+      "checks": {
+        "incident_type": {
+          "expected": "medical",
+          "got": "medical",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= critical",
+          "got": "critical",
+          "pass": true
+        },
+        "weapons": {
+          "expected": false,
+          "got": [],
+          "pass": true
+        },
+        "location": {
+          "expected": null,
+          "got": null,
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 7,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "medical",
+        "severity": "critical",
+        "is_in_progress": true,
+        "location": null,
+        "callback_number": null,
+        "caller_name": "Jolene Harvey",
+        "people_involved": null,
+        "injuries": [
+          "not breathing",
+          "cold and stiff"
+        ],
+        "weapons": [],
+        "hazards": [],
+        "vehicles": [],
+        "services_needed": [
+          "ems"
+        ],
+        "immediate_actions": [
+          "EMS units dispatched",
+          "Dispatcher remains on line to provide guidance"
+        ],
+        "summary": "Caller reports a 60-year-old male who is not breathing, cold and stiff, after attempting CPR. The caller is at a neighbor's house while the victim's exact location is unknown. EMS units have been dispatched and the dispatcher remains on the line.",
+        "uncertainties": [
+          "Exact location of the victim not provided",
+          "Callback phone number not provided",
+          "Whether any weapons are present not established",
+          "Whether any hazards present not established",
+          "Whether the victim is still at the original location or moved unclear",
+          "Exact spelling of caller's last name uncertain due to garbled transcription",
+          "Whether any other people are present at the scene unclear"
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "nvidia",
+        "model": "nvidia/nemotron-3-super-120b-a12b @ nvidia"
+      }
+    },
+    {
+      "sample": "call_645.mp3",
+      "seconds": 16.3,
+      "checks": {
+        "incident_type": {
+          "expected": "police",
+          "got": "police",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= high",
+          "got": "medium",
+          "pass": true
+        },
+        "weapons": {
+          "expected": false,
+          "got": [],
+          "pass": true
+        },
+        "location": {
+          "expected": "Winter Garden",
+          "got": null,
+          "pass": false
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 7,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "police",
+        "severity": "medium",
+        "is_in_progress": null,
+        "location": null,
+        "callback_number": null,
+        "caller_name": null,
+        "people_involved": null,
+        "injuries": [],
+        "weapons": [],
+        "hazards": [],
+        "vehicles": [],
+        "services_needed": [
+          "police"
+        ],
+        "immediate_actions": [
+          "Request address from caller",
+          "Ask for suspect description (race, clothing)",
+          "Keep caller on line and reassure",
+          "Dispatch police to reported location"
+        ],
+        "summary": "Caller reports a burglary at a neighbor's house in Lake Robert Slandering, Winter Garden, stating the victim is bound with feet tied. The caller is unsure if suspects are still present and requests police assistance.",
+        "uncertainties": [
+          "Exact address is unclear; 'Lake Robert Slandering, Winter Garden' may be garbled ASR output.",
+          "Whether suspects are still at the scene or have fled is not established.",
+          "Nature and extent of victim's injuries beyond being bound are not described.",
+          "Caller's name and callback number were not provided.",
+          "Number of people involved (victim, suspects, others) is not specified.",
+          "No weapons or vehicles were mentioned.",
+          "Any hazards such as fire, gas, or electrical issues were not reported."
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "nvidia",
+        "model": "nvidia/nemotron-3-super-120b-a12b @ nvidia"
+      }
+    },
+    {
+      "sample": "call_9.mp3",
+      "seconds": 30.1,
+      "checks": {
+        "incident_type": {
+          "expected": "police",
+          "got": "police",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= medium",
+          "got": "critical",
+          "pass": false
+        },
+        "weapons": {
+          "expected": false,
+          "got": [],
+          "pass": true
+        },
+        "location": {
+          "expected": "Court",
+          "got": "7th Street Court",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 7,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "police",
+        "severity": "critical",
+        "is_in_progress": true,
+        "location": "7th Street Court",
+        "callback_number": "605",
+        "caller_name": "Mike Forbus",
+        "people_involved": 3,
+        "injuries": [],
+        "weapons": [],
+        "hazards": [],
+        "vehicles": [],
+        "services_needed": [
+          "police"
+        ],
+        "immediate_actions": [
+          "Dispatch police officers to 7th Street Court."
+        ],
+        "summary": "Caller reports two teenage daughters physically fighting at 7th Street Court; one kicked a hole in a door; caller unable to control the 12-year-old. Requests police assistance. No injuries or weapons reported.",
+        "uncertainties": [
+          "Exact ages of the daughters are unclear (caller gives 12 and almost 14, then 12 and 13 and a half).",
+          "Location lacks city, state, or zip code; only '7th Street Court' provided.",
+          "Callback number '605' may be incomplete or missing area code.",
+          "It is uncertain whether the fight is still ongoing or has ended.",
+          "No information about any injuries sustained by the daughters or others.",
+          "No confirmation that any weapons are present; only a door was kicked.",
+          "Unclear if any other individuals are present at the scene besides the caller and her two daughters."
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "nvidia",
+        "model": "nvidia/nemotron-3-super-120b-a12b @ nvidia"
+      }
+    },
+    {
+      "sample": "call_93.mp3",
+      "seconds": 28.3,
+      "checks": {
+        "incident_type": {
+          "expected": "medical",
+          "got": "medical",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= critical",
+          "got": "critical",
+          "pass": true
+        },
+        "weapons": {
+          "expected": false,
+          "got": [],
+          "pass": true
+        },
+        "location": {
+          "expected": "52",
+          "got": "52-10-5-1",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 8,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "medical",
+        "severity": "critical",
+        "is_in_progress": true,
+        "location": "52-10-5-1",
+        "callback_number": "539-2443",
+        "caller_name": null,
+        "people_involved": 3,
+        "injuries": [
+          "choking",
+          "not breathing"
+        ],
+        "weapons": [],
+        "hazards": [],
+        "vehicles": [],
+        "services_needed": [
+          "police",
+          "ems"
+        ],
+        "immediate_actions": [
+          "Heimlich is on its way",
+          "Asked for address",
+          "Asked for callback number",
+          "Asked about medications"
+        ],
+        "summary": "Caller reports a 39\u2011year\u2011old female choking and not breathing on the kitchen floor at 52-10-5-1. She is unresponsive with a possible airway obstruction. Police and EMS have been requested; Heimlich maneuver assistance is en route.",
+        "uncertainties": [
+          "Exact object causing choking is not stated",
+          "Meaning of 'socket behind her' unclear",
+          "Statement 'She's peeing her pants out' unclear",
+          "Caller's name not provided",
+          "Relationship of Jake to scene unclear",
+          "Whether the girlfriend actually shot the caller is uncertain and later denied",
+          "Address format '52-10-5-1' may be garbled",
+          "Phone number '539-2443' may be incomplete or garbled"
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "nvidia",
+        "model": "nvidia/nemotron-3-super-120b-a12b @ nvidia"
+      }
+    }
+  ]
+}

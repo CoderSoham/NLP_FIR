@@ -1,0 +1,223 @@
+{
+  "backend": "local",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct (cuda)",
+  "load_seconds": 102.4,
+  "passed": 14,
+  "total": 18,
+  "rows": [
+    {
+      "sample": "call_21.mp3",
+      "seconds": 161.0,
+      "checks": {
+        "incident_type": {
+          "expected": "police",
+          "got": "accident",
+          "pass": false
+        },
+        "severity": {
+          "expected": "<= medium",
+          "got": "low",
+          "pass": true
+        },
+        "weapons": {
+          "expected": false,
+          "got": [],
+          "pass": true
+        },
+        "location": {
+          "expected": "24th",
+          "got": "24th Street near Mueller Brass",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 3,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": {
+            "services_needed": [
+              "emergencies"
+            ]
+          },
+          "pass": false
+        }
+      },
+      "record": {
+        "incident_type": "accident",
+        "severity": "low",
+        "is_in_progress": null,
+        "location": "24th Street near Mueller Brass",
+        "callback_number": null,
+        "caller_name": null,
+        "people_involved": null,
+        "injuries": [],
+        "weapons": [],
+        "hazards": [
+          "garbage",
+          "traffic"
+        ],
+        "vehicles": [
+          "Jeep"
+        ],
+        "services_needed": [
+          "police"
+        ],
+        "immediate_actions": [
+          "call fire department",
+          "ask for backup"
+        ],
+        "summary": "A person is trapped in their car due to malfunctioning garage doors. Callers state they are on 24th Street near Mueller Brass.",
+        "uncertainties": [
+          "Garage doors are described as being closed on both sides.",
+          "Location is unclear due to ASR noise.",
+          "Caller mentions being stuck inside a car wash."
+        ],
+        "_rejected": {
+          "services_needed": [
+            "emergencies"
+          ]
+        }
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "local",
+        "model": "Qwen/Qwen2.5-1.5B-Instruct (cuda)"
+      }
+    },
+    {
+      "sample": "call_24.mp3",
+      "seconds": 36.2,
+      "checks": {
+        "incident_type": {
+          "expected": "unknown",
+          "got": "unknown",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= unknown",
+          "got": "unknown",
+          "pass": true
+        },
+        "weapons": {
+          "expected": false,
+          "got": [],
+          "pass": true
+        },
+        "location": {
+          "expected": "Bannister",
+          "got": null,
+          "pass": false
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 2,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "unknown",
+        "severity": "unknown",
+        "is_in_progress": null,
+        "location": null,
+        "callback_number": null,
+        "caller_name": null,
+        "people_involved": null,
+        "injuries": [],
+        "weapons": [],
+        "hazards": [],
+        "vehicles": [],
+        "services_needed": [
+          "police"
+        ],
+        "immediate_actions": [
+          "Call police immediately!"
+        ],
+        "summary": "Emergency call received at 1511 hours. Location unknown due to garbled audio.",
+        "uncertainties": [
+          "Location unclear due to poor audio quality.",
+          "Caller did not provide specific address details."
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "local",
+        "model": "Qwen/Qwen2.5-1.5B-Instruct (cuda)"
+      }
+    },
+    {
+      "sample": "call_9.mp3",
+      "seconds": 43.1,
+      "checks": {
+        "incident_type": {
+          "expected": "police",
+          "got": "police",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= medium",
+          "got": "high",
+          "pass": false
+        },
+        "weapons": {
+          "expected": false,
+          "got": [],
+          "pass": true
+        },
+        "location": {
+          "expected": "714",
+          "got": "714 Court",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 1,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "police",
+        "severity": "high",
+        "is_in_progress": null,
+        "location": "714 Court",
+        "callback_number": "604",
+        "caller_name": "Mike Fork",
+        "people_involved": 2,
+        "injuries": [],
+        "weapons": [],
+        "hazards": [
+          "door"
+        ],
+        "vehicles": [],
+        "services_needed": [
+          "police",
+          "ems"
+        ],
+        "immediate_actions": [
+          "dispatch officers to the scene",
+          "secure the area"
+        ],
+        "summary": "A teenager has injured herself by kicking a hole in a door while fighting with another teenager. Police are needed to ensure safety.",
+        "uncertainties": [
+          "door"
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "local",
+        "model": "Qwen/Qwen2.5-1.5B-Instruct (cuda)"
+      }
+    }
+  ]
+}

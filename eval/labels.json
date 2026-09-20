@@ -1,0 +1,92 @@
+{
+  "_comment": [
+    "Ground truth, hand-labelled by reading the large-v3-turbo transcripts.",
+    "Small and honest: three recordings is not an evaluation set, it is a",
+    "regression guard. null means 'the transcript does not establish this',",
+    "which is itself the correct answer and is scored as such.",
+    "call_24 is police radio traffic, not a 911 call. It is kept precisely",
+    "because the pipeline assumes a caller/dispatcher conversation and should",
+    "say so rather than invent one."
+  ],
+  "call_9.mp3": {
+    "note": "Mother reports her two daughters, 12 and 13, physically fighting. Dispatcher makes a sarcastic remark about shooting one of them; caller objects. No weapon, no injury. Location token relaxed to 'Court': transcribers disagree between '714 Court' and '7th Street Court'.",
+    "incident_type": "police",
+    "severity_max": "medium",
+    "weapon_present": false,
+    "location_stated": true,
+    "location_contains": "Court",
+    "is_emergency_call": true
+  },
+  "call_21.mp3": {
+    "note": "Woman trapped inside an automatic car wash on 24th Street, across from Mueller Brass. Garage doors will not open. Frightened but unhurt. No fire, no weapon.",
+    "incident_type": "police",
+    "severity_max": "medium",
+    "weapon_present": false,
+    "location_stated": true,
+    "location_contains": "24th",
+    "is_emergency_call": true
+  },
+  "call_24.mp3": {
+    "note": "Police radio traffic covering an officer-involved shooting: a suspect disarmed of one gun, a .22 and a revolver, an officer shot through the arm, 'officer down'. NOT a caller/dispatcher 911 conversation. RELABELLED 2026-09-20: the original label was derived from a 120s truncation that contained only routine chatter, and marked this unknown/no-weapon. Better ASR revealed the incident -- the model was right and the label was wrong.",
+    "incident_type": "police",
+    "severity_max": "critical",
+    "weapon_present": true,
+    "location_stated": true,
+    "location_contains": "Bannister",
+    "is_emergency_call": false
+  },
+  "call_456.mp3": {
+    "note": "Self-defence shooting. Caller shot a man attacking him; man is down and 'hurt bad'. Caller confirms the gun is on the table. Address and callback given.",
+    "incident_type": "police",
+    "severity_max": "critical",
+    "weapon_present": true,
+    "location_stated": true,
+    "location_contains": "Alameda",
+    "is_emergency_call": true
+  },
+  "call_589.mp3": {
+    "note": "Man found cold and not breathing; caller attempted CPR and mouth-to-mouth. He is likely long dead. No address stated in the call, only background references to other towns.",
+    "incident_type": "medical",
+    "severity_max": "critical",
+    "weapon_present": false,
+    "location_stated": false,
+    "location_contains": null,
+    "is_emergency_call": true
+  },
+  "call_93.mp3": {
+    "note": "Choking victim, not breathing. ASR garbles an early line as 'my girlfriend shot me' which the caller immediately corrects to choking - a trap for keyword matching. Address given as digits.",
+    "incident_type": "medical",
+    "severity_max": "critical",
+    "weapon_present": false,
+    "location_stated": true,
+    "location_contains": "52",
+    "is_emergency_call": true
+  },
+  "call_572.mp3": {
+    "note": "Daughter (10) and husband shot in the head; shooters returning; caller also shot. Location badly garbled by ASR.",
+    "incident_type": "police",
+    "severity_max": "critical",
+    "weapon_present": true,
+    "location_stated": true,
+    "location_contains": "Arizona",
+    "is_emergency_call": true
+  },
+  "call_206.mp3": {
+    "note": "Vehicle hit a guardrail on I-75 southbound in dense fog; a second collision heard behind. Preceded by an archival recording preamble the model must ignore.",
+    "incident_type": "accident",
+    "severity_max": "high",
+    "weapon_present": false,
+    "location_stated": true,
+    "location_contains": "75",
+    "is_emergency_call": true
+  },
+  "call_645.mp3": {
+    "note": "Break-in at a neighbour's house; victim found bound at the feet. No weapon mentioned. Location garbled ('Lake Robert Slandering, Winter Garden').",
+    "incident_type": "police",
+    "severity_max": "high",
+    "weapon_present": false,
+    "location_stated": true,
+    "location_contains": "Winter Garden",
+    "is_emergency_call": true
+  }
+}

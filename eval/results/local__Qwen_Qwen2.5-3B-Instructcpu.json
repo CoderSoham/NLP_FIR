@@ -1,0 +1,219 @@
+{
+  "backend": "local",
+  "model": "Qwen/Qwen2.5-3B-Instruct (cpu)",
+  "load_seconds": 135.8,
+  "passed": 16,
+  "total": 18,
+  "rows": [
+    {
+      "sample": "call_21.mp3",
+      "seconds": 371.1,
+      "checks": {
+        "incident_type": {
+          "expected": "police",
+          "got": "police",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= medium",
+          "got": "low",
+          "pass": true
+        },
+        "weapons": {
+          "expected": false,
+          "got": [],
+          "pass": true
+        },
+        "location": {
+          "expected": "24th",
+          "got": "on 24th Street, across from Mueller Brass",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 3,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "police",
+        "severity": "low",
+        "is_in_progress": true,
+        "location": "on 24th Street, across from Mueller Brass",
+        "callback_number": null,
+        "caller_name": "unknown",
+        "people_involved": 1,
+        "injuries": [],
+        "weapons": [],
+        "hazards": [],
+        "vehicles": [
+          "jeep"
+        ],
+        "services_needed": [
+          "ems",
+          "police"
+        ],
+        "immediate_actions": [
+          "hold on",
+          "don't hang up",
+          "start to freak out",
+          "get out of the car"
+        ],
+        "summary": "A caller reports being trapped in a car wash on 24th Street, across from Mueller Brass, unable to move their Jeep due to closed garage doors.",
+        "uncertainties": [
+          "the exact name of the car wash",
+          "the exact location of the car wash",
+          "whether there were any workers present"
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "local",
+        "model": "Qwen/Qwen2.5-3B-Instruct (cpu)"
+      }
+    },
+    {
+      "sample": "call_24.mp3",
+      "seconds": 352.6,
+      "checks": {
+        "incident_type": {
+          "expected": "unknown",
+          "got": "unknown",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= unknown",
+          "got": "unknown",
+          "pass": true
+        },
+        "weapons": {
+          "expected": false,
+          "got": [],
+          "pass": true
+        },
+        "location": {
+          "expected": "Bannister",
+          "got": "1330 Bannister Road at 1511 hours, 1512. This is the L3 of Osterdown, 1331 East Bannister, 530's in, question, 230's in route",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 3,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "unknown",
+        "severity": "unknown",
+        "is_in_progress": true,
+        "location": "1330 Bannister Road at 1511 hours, 1512. This is the L3 of Osterdown, 1331 East Bannister, 530's in, question, 230's in route",
+        "callback_number": "239",
+        "caller_name": "John Adams",
+        "people_involved": 1,
+        "injuries": [],
+        "weapons": [],
+        "hazards": [],
+        "vehicles": [],
+        "services_needed": [
+          "ems"
+        ],
+        "immediate_actions": [
+          "218, I show you code 1, and 230 code 1 at 1513 hours",
+          "25 and I out",
+          "222, 225, 218, I show you code 1, and 230 code 1 at 1513 hours"
+        ],
+        "summary": "A caller reports a location on Bannister Road and requests assistance. Dispatchers are sending units and providing codes.",
+        "uncertainties": [
+          "Garbled location details",
+          "Garbled dispatcher instructions",
+          "Garbled time reference"
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "local",
+        "model": "Qwen/Qwen2.5-3B-Instruct (cpu)"
+      }
+    },
+    {
+      "sample": "call_9.mp3",
+      "seconds": 202.5,
+      "checks": {
+        "incident_type": {
+          "expected": "police",
+          "got": "police",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= medium",
+          "got": "high",
+          "pass": false
+        },
+        "weapons": {
+          "expected": false,
+          "got": [
+            "foot"
+          ],
+          "pass": false
+        },
+        "location": {
+          "expected": "714",
+          "got": "714 Court",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 2,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "police",
+        "severity": "high",
+        "is_in_progress": true,
+        "location": "714 Court",
+        "callback_number": "604",
+        "caller_name": "Mike Fork",
+        "people_involved": 3,
+        "injuries": [],
+        "weapons": [
+          "foot"
+        ],
+        "hazards": [],
+        "vehicles": [],
+        "services_needed": [
+          "police"
+        ],
+        "immediate_actions": [
+          "send police officer",
+          "call supervisor"
+        ],
+        "summary": "Caller reports physical fight between two teenage daughters at 714 Court. One daughter is out of control and kicking holes in doors.",
+        "uncertainties": [
+          "garbled speech",
+          "joke about shooting"
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "local",
+        "model": "Qwen/Qwen2.5-3B-Instruct (cpu)"
+      }
+    }
+  ]
+}
