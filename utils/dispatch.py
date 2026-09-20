@@ -17,9 +17,18 @@ DEFAULT_STATIONS_FILE = os.path.join(
 
 FALLBACK = {
     "station": "Unassigned",
-    "eta_min": 15,
+    "eta_min": None,
     "units": ["emergency_team"],
+    "basis": "no_registry",
+    "matched_on": None,
 }
+
+# How the station was chosen. Reported so a reader can tell a real match from a
+# default -- with no location, this used to return the first station in the list
+# and an ETA, indistinguishable from a genuine match.
+BASIS_LOCATION = "location_match"
+BASIS_DEFAULT = "default_for_type"
+BASIS_NONE = "no_registry"
 
 
 def load_stations(path=None, force=False):
@@ -43,10 +52,16 @@ def load_stations(path=None, force=False):
 
 
 def get_dispatch_suggestion(emergency_type, probable_location, stations=None):
-    """Pick a station for an emergency type, preferring an area keyword match.
+    """Pick a station for an emergency type, reporting how it was chosen.
 
-    Falls back to the first station listed for the type, then to a placeholder,
-    so this always returns the same shape.
+    `basis` distinguishes a real area-keyword match from the fallback. Without
+    it the caller cannot tell whether "Precinct A, ETA 4 min" came from the
+    caller's address or from the order of a list -- on a real sample call the
+    location was None and this still returned a station and a confident ETA.
+
+    `eta_min` is None unless the station was matched on location. A stored
+    constant presented as an arrival time is the most misleading field the
+    pipeline can emit, so it is withheld rather than guessed.
     """
     registry = load_stations() if stations is None else stations
     candidates = registry.get(emergency_type) or registry.get("accident") or []
@@ -54,13 +69,29 @@ def get_dispatch_suggestion(emergency_type, probable_location, stations=None):
         return dict(FALLBACK)
 
     location = (probable_location or "").lower()
-    chosen = next(
-        (s for s in candidates
-         if any(k in location for k in s.get("area_keywords", []))),
-        candidates[0],
-    )
+    matched_on = None
+    chosen = None
+    if location:
+        for station in candidates:
+            hit = next((k for k in station.get("area_keywords", []) if k in location), None)
+            if hit:
+                chosen, matched_on = station, hit
+                break
+
+    if chosen is None:
+        chosen = candidates[0]
+        return {
+            "station": chosen.get("name", FALLBACK["station"]),
+            "eta_min": None,
+            "units": chosen.get("units", list(FALLBACK["units"])),
+            "basis": BASIS_DEFAULT,
+            "matched_on": None,
+        }
+
     return {
         "station": chosen.get("name", FALLBACK["station"]),
-        "eta_min": chosen.get("base_eta_min", FALLBACK["eta_min"]),
+        "eta_min": chosen.get("base_eta_min"),
         "units": chosen.get("units", list(FALLBACK["units"])),
+        "basis": BASIS_LOCATION,
+        "matched_on": matched_on,
     }

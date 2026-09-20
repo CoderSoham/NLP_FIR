@@ -3,6 +3,16 @@ import os
 # Base directories
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# Load a project-local .env before anything reads the environment.
+# `python-dotenv` was already a declared dependency and nothing called it, so a
+# .env file sat there being ignored. Real environment variables win over the
+# file, which is what you want when a container or CI supplies them.
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(BASE_DIR, ".env"), override=False)
+except ImportError:
+    pass
+
 # Folders
 # Uploads live outside static/. Serving them from the static mount made every
 # recording publicly fetchable by filename, forever.
@@ -37,6 +47,14 @@ DEBUG = os.environ.get('FLASK_DEBUG', '0') == '1'
 # transcription. Done here because config is imported before utils.audio_utils.
 from utils.ffmpeg_path import ensure_ffmpeg_on_path
 FFMPEG_PATH = ensure_ffmpeg_on_path()
+
+# Audio is truncated to bound worst-case request time; the result reports how
+# much of the call was actually analysed.
+MAX_AUDIO_SECONDS = int(os.environ.get('MAX_AUDIO_SECONDS', 120))
+
+# The emotion detector emits 7 classes, so chance is ~0.14. Below this the label
+# carries no information and must not move the severity score.
+EMOTION_MIN_CONFIDENCE = float(os.environ.get('EMOTION_MIN_CONFIDENCE', 0.5))
 
 # Model settings
 WHISPER_MODEL_NAME = os.environ.get('WHISPER_MODEL_NAME', 'base')

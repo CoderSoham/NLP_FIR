@@ -1,9 +1,7 @@
 import os
 import uuid
-import whisper
 import torch
 import librosa
-import soundfile as sf
 import matplotlib
 matplotlib.use('Agg')  # Set the backend to non-interactive 'Agg'
 import matplotlib.pyplot as plt
@@ -23,10 +21,17 @@ from transformers import pipeline
 from collections import Counter
 import warnings
 warnings.filterwarnings('ignore')
-from config import PROCESSED_FOLDER, WHISPER_MODEL_NAME, FORCE_CPU
+from config import (PROCESSED_FOLDER, WHISPER_MODEL_NAME, FORCE_CPU,
+                    MAX_AUDIO_SECONDS, EMOTION_MIN_CONFIDENCE)
 from utils.plots import plot_path, generate_entity_plot
 from utils.dispatch import get_dispatch_suggestion
 from utils.signals import augment_actions
+from utils.severity import severity_score, severity_label
+from utils.summary import length_budget, is_informative
+from utils.llm import extract_incident
+from utils import gpu
+from utils.asr import transcribe as asr_transcribe
+from utils.audio_clean import clean_audio
 from typing import Optional, Tuple
 
 _DEVICE = None
@@ -53,8 +58,43 @@ def pipeline_device():
     """transformers.pipeline takes an int: -1 for CPU, else the CUDA ordinal."""
     return 0 if resolve_device() == 'cuda' else -1
 
+def unload_nlp_models():
+    """Release the classical transformer pipelines from the GPU.
+
+    These are the zero-shot classifier, the two summarisers, the sentiment and
+    emotion heads and the sentence embedder -- together roughly 4 GB of
+    weights. With FORCE_CPU=0 they all land on the GPU, and nothing evicted
+    them, so the LLM stage could never allocate and reported itself unavailable
+    on every request while working perfectly in isolation.
+
+    They are registered as one slot because they run as one phase, between
+    transcription and extraction.
+    """
+    global embedder, nlp, t5_tokenizer, t5_model, EMERGENCY_CLASSIFIER
+    global SEVERITY_CLASSIFIER, NER_MODEL, SENTENCE_MODEL, SUMMARIZER
+    global SENTIMENT_ANALYZER, EMOTION_DETECTOR
+
+    if resolve_device() != 'cuda':
+        return False
+    held = any(m is not None for m in (
+        embedder, t5_model, EMERGENCY_CLASSIFIER, SUMMARIZER,
+        SENTIMENT_ANALYZER, EMOTION_DETECTOR, SENTENCE_MODEL))
+    if not held:
+        return False
+
+    embedder = None
+    t5_tokenizer = t5_model = None
+    EMERGENCY_CLASSIFIER = SEVERITY_CLASSIFIER = None
+    SENTENCE_MODEL = SUMMARIZER = None
+    SENTIMENT_ANALYZER = EMOTION_DETECTOR = None
+    # spaCy stays: it is CPU-only and cheap to keep.
+    gpu.empty_cache()
+    return True
+
+
+gpu.register('nlp', unload_nlp_models)
+
 # Initialize models as None for lazy loading
-whisper_model = None
 embedder = None
 nlp = None
 t5_tokenizer = None
@@ -67,17 +107,9 @@ SUMMARIZER = None
 SENTIMENT_ANALYZER = None
 EMOTION_DETECTOR = None
 
-def load_whisper_model():
-    global whisper_model
-    if whisper_model is None:
-        # Force CPU usage and set specific parameters
-        whisper_model = whisper.load_model(WHISPER_MODEL_NAME, device=resolve_device())
-        # Set model parameters for better stability
-        whisper_model.eval()  # Set to evaluation mode
-    return whisper_model
-
 def load_embedder():
     global embedder
+    gpu.acquire('nlp')
     if embedder is None:
         embedder = SentenceTransformer('all-MiniLM-L6-v2', device=resolve_device())
     return embedder
@@ -90,6 +122,7 @@ def load_nlp():
 
 def load_t5():
     global t5_tokenizer, t5_model
+    gpu.acquire('nlp')
     if t5_tokenizer is None or t5_model is None:
         t5_model_name = "t5-small"
         t5_tokenizer = T5Tokenizer.from_pretrained(t5_model_name)
@@ -99,6 +132,7 @@ def load_t5():
 
 def load_emergency_classifier():
     global EMERGENCY_CLASSIFIER
+    gpu.acquire('nlp')
     if EMERGENCY_CLASSIFIER is None:
         EMERGENCY_CLASSIFIER = pipeline(
             "zero-shot-classification",
@@ -130,12 +164,14 @@ def load_ner_model():
 
 def load_sentence_model():
     global SENTENCE_MODEL
+    gpu.acquire('nlp')
     if SENTENCE_MODEL is None:
         SENTENCE_MODEL = SentenceTransformer('all-MiniLM-L6-v2', device=resolve_device())
     return SENTENCE_MODEL
 
 def load_summarizer():
     global SUMMARIZER
+    gpu.acquire('nlp')
     if SUMMARIZER is None:
         SUMMARIZER = pipeline(
             "summarization",
@@ -147,6 +183,7 @@ def load_summarizer():
 
 def load_sentiment_analyzer():
     global SENTIMENT_ANALYZER
+    gpu.acquire('nlp')
     if SENTIMENT_ANALYZER is None:
         SENTIMENT_ANALYZER = pipeline(
             "sentiment-analysis",
@@ -158,6 +195,7 @@ def load_sentiment_analyzer():
 
 def load_emotion_detector():
     global EMOTION_DETECTOR
+    gpu.acquire('nlp')
     if EMOTION_DETECTOR is None:
         EMOTION_DETECTOR = pipeline(
             "text-classification",
@@ -197,10 +235,11 @@ def summarize_text(text):
     
     # Generate summary with adjusted parameters
     with torch.inference_mode():
+        t5_max, t5_min = length_budget(len(text.split()), ceiling=200)
         summary_ids = t5_model.generate(
             input_ids,
-            max_length=200,  # Increased max length for more detailed summary
-            min_length=30,   # Increased min length to ensure sufficient detail
+            max_length=t5_max,
+            min_length=t5_min,
             length_penalty=1.5,  # Balanced length penalty
             num_beams=5,     # More beams for better quality
             early_stopping=True,
@@ -239,7 +278,9 @@ def summarize_text_chunked(text: str) -> str:
                 ch = ch.strip()
                 if not ch:
                     continue
-                out = summarizer(ch, max_length=120, min_length=40, do_sample=False)[0]['summary_text']
+                ch_max, ch_min = length_budget(len(ch.split()))
+                out = summarizer(ch, max_length=ch_max, min_length=ch_min,
+                                 do_sample=False)[0]['summary_text']
                 summaries.append(out)
     except Exception:
         # If BART errors, fall back to existing T5 summarizer
@@ -249,29 +290,16 @@ def summarize_text_chunked(text: str) -> str:
     # Final pass to tighten
     try:
         with torch.inference_mode():
-            final = summarizer(combined, max_length=160, min_length=50, do_sample=False)[0]['summary_text']
+            fin_max, fin_min = length_budget(len(combined.split()))
+            final = summarizer(combined, max_length=fin_max, min_length=fin_min,
+                               do_sample=False)[0]['summary_text']
             return clean_summary(final)
     except Exception:
         return clean_summary(combined)
 
 def is_summary_informative(summary: str, source: str) -> bool:
-    if not summary:
-        return False
-    if len(summary.split()) < 20:
-        return False
-    keywords = [
-        'address', 'location', 'street', 'avenue', 'boulevard',
-        'suspect', 'vehicle', 'truck', 'car', 'license', 'plate',
-        'weapon', 'gun', 'shot', 'fire', 'smoke', 'injury', 'bleeding'
-    ]
-    s = summary.lower()
-    if any(k in s for k in keywords):
-        return True
-    # If not in summary, check source contains critical signals; if yes, relax threshold
-    src = (source or '').lower()
-    if any(k in src for k in ['shot', 'gun', 'fire', 'smoke', 'unconscious', 'not breathing']):
-        return len(summary.split()) >= 15
-    return False
+    """Whether a summary is worth showing. See utils.summary for the rule."""
+    return is_informative(summary, source)
 
 def augment_actions_from_transcript(transcript: str, base_response: dict) -> dict:
     """Augment recommended actions from high-signal phrases in the transcript.
@@ -417,70 +445,38 @@ def get_emergency_type(text):
         return "unknown"  # Return unknown if any part of the classification fails
 
 def assess_severity(text, entities):
-    """Optimized severity assessment using multiple ML models"""
+    """Assess severity from the transcript and the entities already extracted.
+
+    The arithmetic lives in utils.severity as a pure function so it can be
+    tested without loading a model. This function is the part that needs one.
+    """
     if not text or len(text.strip()) < 3:
-        return "low"  # Return low severity for empty or very short text
-    
-    # Truncate text to prevent token length issues
-    text = text[:500]  # Limit to 500 characters
-        
+        return "low"
+
+    text = text[:500]
+
     try:
-        # Get base severity classification
         classifier = load_severity_classifier()
-        severity_result = classifier(text, candidate_labels=["high", "medium", "low"])
-        
-        # Get sentiment and emotion
-        sentiment_analyzer = load_sentiment_analyzer()
-        emotion_detector = load_emotion_detector()
-        
+        result = classifier(text, candidate_labels=["high", "medium", "low"])
+        distribution = dict(zip(result["labels"], result["scores"]))
+
         try:
-            sentiment = sentiment_analyzer(text[:128])[0]  # Limit to 128 tokens for sentiment
+            sentiment = load_sentiment_analyzer()(text[:128])[0]
         except Exception:
             sentiment = {"label": "NEU", "score": 0.5}
-            
         try:
-            emotion = emotion_detector(text[:128])[0]  # Limit to 128 tokens for emotion
+            emotion = load_emotion_detector()(text[:128])[0]
         except Exception:
             emotion = {"label": "neutral", "score": 0.5}
-        
-        # Calculate severity score
-        severity_score = 0
 
-        # Base severity from classifier.
-        # `scores[0]` is the confidence of whichever label ranked first, so the
-        # previous version scored a confident "low" exactly like a confident
-        # "high" -- it read the confidence and discarded the class. Take an
-        # expectation over the label distribution instead.
-        by_label = dict(zip(severity_result['labels'], severity_result['scores']))
-        severity_score += 0.4 * (by_label.get('high', 0.0)
-                                 + 0.5 * by_label.get('medium', 0.0))
+        score, _parts = severity_score(
+            distribution, sentiment, emotion, entities,
+            emotion_min_confidence=EMOTION_MIN_CONFIDENCE)
+        return severity_label(score)
 
-        # Adjust based on sentiment (bertweet emits POS / NEU / NEG)
-        if sentiment['label'] == 'NEG':
-            severity_score += sentiment['score'] * 0.2
-
-        # Adjust based on emotion. The detector
-        # (j-hartmann/emotion-english-distilroberta-base) emits anger, disgust,
-        # fear, joy, neutral, sadness, surprise -- it has no 'anxiety' label, so
-        # the old check could only ever fire on 'fear'.
-        if emotion['label'] in ('fear', 'anger', 'sadness', 'disgust'):
-            severity_score += emotion['score'] * 0.2
-        
-        # Adjust based on entities
-        entity_count = len(entities)
-        severity_score += min(entity_count * 0.1, 0.2)
-        
-        # Determine final severity
-        if severity_score > 0.7:
-            return "high"
-        elif severity_score > 0.4:
-            return "medium"
-        else:
-            return "low"
-            
     except Exception as e:
         print(f"Error in severity assessment: {str(e)}")
-        return "low"  # Return low severity if assessment fails
+        return "low"
 
 def get_emergency_response(emergency_type):
     """Get ML-enhanced emergency response"""
@@ -520,10 +516,19 @@ def process_audio_file(input_path, output_folder):
         # Load audio file with specific parameters for Whisper
         audio, sr = librosa.load(input_path, sr=16000, mono=True)  # Whisper expects 16kHz mono audio
 
-        # Trim excessively long audio to bound processing time (e.g., 2 minutes)
-        max_seconds = 120
-        if len(audio) > sr * max_seconds:
-            audio = audio[: sr * max_seconds]
+        # Trim excessively long audio to bound processing time. The cap is
+        # deliberate -- Whisper is roughly linear in duration on CPU, so one
+        # long recording would otherwise occupy the only worker for minutes.
+        #
+        # What was missing is saying so. Two of the three sample calls are over
+        # the cap, one losing 80% of the conversation, and the report presented
+        # the result as an analysis of the whole call.
+        max_seconds = MAX_AUDIO_SECONDS
+        source_duration = len(audio) / float(sr)
+        truncated = source_duration > max_seconds
+        if truncated:
+            audio = audio[: int(sr * max_seconds)]
+        analysed_duration = len(audio) / float(sr)
 
         # Identifies every artefact this request produces, and is generated
         # before the first of them is written. It used to be created after
@@ -531,43 +536,27 @@ def process_audio_file(input_path, output_folder):
         # long after the PDF stopped having one.
         report_id = uuid.uuid4().hex
 
-        # Generate visualizations
+        # Condition the audio before recognition. Conservative on purpose --
+        # see utils.audio_clean for why aggressive denoising hurts ASR.
+        audio, audio_report = clean_audio(audio, sr)
+
+        # Generate visualizations from what was actually transcribed, not from
+        # the raw file, so the plots describe the analysed signal.
         plots = generate_visualizations(audio, sr, output_folder, report_id)
 
-        # Convert to WAV if needed
-        if not input_path.endswith('.wav'):
-            output_path = os.path.join(output_folder, f'temp_{report_id}.wav')
-            sf.write(output_path, audio, sr)
-        else:
-            output_path = input_path
-        
-        # Load and use Whisper model with specific parameters
-        whisper_model = load_whisper_model()
-        with torch.inference_mode():
-            # First pass: detect language without forcing
-            result = whisper_model.transcribe(
-                output_path,
-                fp16=False,
-                task='transcribe'
-            )
-        transcription = result.get("text", "")
+        # faster-whisper takes the array directly, so the intermediate WAV that
+        # every request used to write and delete is gone.
+        asr_result = asr_transcribe(audio)
+        transcription = asr_result["text"]
+        lang = asr_result["language"]
 
-        # Language information
-        lang = result.get('language', 'en') if isinstance(result, dict) else 'en'
-
-        # If non-English, attempt translation to English for downstream analysis
+        # If non-English, translate to English for the downstream stages.
         translated_text = transcription
         if lang and lang != 'en':
-            with torch.inference_mode():
-                try:
-                    tr_result = whisper_model.transcribe(
-                        output_path,
-                        fp16=False,
-                        task='translate'
-                    )
-                    translated_text = tr_result.get("text", transcription)
-                except Exception:
-                    translated_text = transcription
+            try:
+                translated_text = asr_transcribe(audio, translate=True)["text"]
+            except Exception:
+                translated_text = transcription
         
         # Named entities first -- severity weights them, so they have to exist
         # before it runs. Previously severity was called with a hardcoded []
@@ -640,6 +629,12 @@ def process_audio_file(input_path, output_folder):
             'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             'entities': entities,
             'plots': plots,
+            'asr': {k: v for k, v in asr_result.items() if k != 'segments'},
+            'asr_segments': asr_result['segments'],
+            'audio_report': audio_report,
+            'source_duration_s': round(source_duration, 1),
+            'analysed_duration_s': round(analysed_duration, 1),
+            'truncated': truncated,
             'best_match': best_match,
             'score': score,
             'sentiment': sentiment,
@@ -649,20 +644,77 @@ def process_audio_file(input_path, output_folder):
             'dispatch': dispatch
         }
         
-        data['fir_pdf'] = generate_fir_pdf(data)
+        # LLM enrichment. Runs after the classical path, never instead of it:
+        # the deterministic stages are the floor, and both results are kept so
+        # a disagreement between them can be surfaced rather than hidden.
+        llm_record, llm_meta = extract_incident(
+            translated_text, truncated=truncated,
+            source_seconds=source_duration, analysed_seconds=analysed_duration)
+        data['llm'] = llm_record
+        data['llm_meta'] = llm_meta
+        data['disagreements'] = compare_classifications(data, llm_record)
 
-        # the resampled intermediate is not needed once the PDF exists
-        if output_path != input_path:
-            try:
-                os.remove(output_path)
-            except OSError:
-                pass
+        data['fir_pdf'] = generate_fir_pdf(data)
 
         return data
         
     except Exception as e:
         print(f"Error processing audio file: {str(e)}")
         raise  # Re-raise the exception to handle it in the Flask route
+
+def compare_classifications(classical, llm_record):
+    """Where the classical pipeline and the LLM disagree.
+
+    A disagreement is information, not an error. Two independent methods
+    reaching different conclusions about an emergency call is exactly the case
+    a human should look at, so it is reported rather than resolved by picking a
+    winner.
+    """
+    if not llm_record:
+        return []
+
+    found = []
+    llm_type = llm_record.get('incident_type')
+    if llm_type and llm_type not in ('unknown', 'other') and llm_type != classical.get('emergency_type'):
+        found.append({
+            'field': 'emergency_type',
+            'classical': classical.get('emergency_type'),
+            'llm': llm_type,
+        })
+
+    # The LLM has a 'critical' band the classical scorer does not; fold it in
+    # before comparing so the two are on the same scale.
+    llm_sev = llm_record.get('severity')
+    normalised = {'critical': 'high'}.get(llm_sev, llm_sev)
+    if normalised and normalised != 'unknown' and normalised != classical.get('severity'):
+        found.append({
+            'field': 'severity',
+            'classical': classical.get('severity'),
+            'llm': llm_sev,
+        })
+
+    # The keyword matcher flags weapons on any mention; the LLM is asked to
+    # ignore figures of speech. This is the disagreement that matters most.
+    keyword_weapons = bool((classical.get('response') or {}).get('signals', {}).get('weapons'))
+    llm_weapons = bool(llm_record.get('weapons'))  # now [{item, quote}, ...]
+    if keyword_weapons != llm_weapons:
+        found.append({
+            'field': 'weapons',
+            'classical': 'mentioned' if keyword_weapons else 'not mentioned',
+            'llm': ([w.get('item') for w in llm_record.get('weapons') or []]
+                    or 'none present'),
+        })
+
+    classical_location = classical.get('probable_location')
+    llm_location = llm_record.get('location')
+    if bool(classical_location) != bool(llm_location):
+        found.append({
+            'field': 'location',
+            'classical': classical_location,
+            'llm': llm_location,
+        })
+
+    return found
 
 def generate_visualizations(audio, sr, output_folder, report_id):
     """Generate audio visualizations. Returns the plot kinds written."""
@@ -717,7 +769,28 @@ def generate_fir_pdf(data):
     pdf.multi_cell(0, 10, sanitize_text(f"Type: {data['emergency_type'].title()}"))
     pdf.multi_cell(0, 10, sanitize_text(f"Severity: {data['severity'].title()}"))
     pdf.multi_cell(0, 10, sanitize_text(f"Priority: {data['response']['priority'].title()}"))
-    pdf.multi_cell(0, 10, sanitize_text(f"Estimated Response Time: {data['response']['estimated_response_time']} minutes\n"))
+    # Labelled as a protocol target, not an ETA. It comes from the priority
+    # alone and has nothing to do with the station or the caller's location; the
+    # report used to print it beside the dispatch ETA as if they were comparable.
+    pdf.multi_cell(0, 10, sanitize_text(
+        f"Protocol target for this priority: {data['response']['estimated_response_time']} minutes"))
+
+    dispatch = data.get('dispatch') or {}
+    if dispatch.get('basis') == 'location_match':
+        eta = dispatch.get('eta_min')
+        pdf.multi_cell(0, 10, sanitize_text(
+            f"Nearest station: {dispatch.get('station')} (matched on "
+            f"'{dispatch.get('matched_on')}')"
+            + (f", ETA {eta} minutes" if eta else "")))
+    elif dispatch.get('station'):
+        pdf.multi_cell(0, 10, sanitize_text(
+            f"Nearest station: {dispatch.get('station')} - no location identified "
+            "in the call, so this is the default for this emergency type. No ETA."))
+
+    if data.get('truncated'):
+        pdf.multi_cell(0, 10, sanitize_text(
+            f"PARTIAL ANALYSIS: only the first {data.get('analysed_duration_s')}s "
+            f"of a {data.get('source_duration_s')}s recording was analysed."))
     
     # Emotional Analysis
     pdf.set_font("Arial", 'B', 14)
@@ -732,6 +805,14 @@ def generate_fir_pdf(data):
     pdf.set_font("Arial", size=12)
     for suggestion in data['response']['suggestions']:
         pdf.multi_cell(0, 10, sanitize_text(f"• {suggestion}"))
+
+    signals = data['response'].get('signals') or {}
+    if signals:
+        pdf.multi_cell(0, 10, sanitize_text(
+            "\nSome actions above were added because these words appeared in the "
+            "transcript. They are keyword matches, not judgements:"))
+        for group, words in signals.items():
+            pdf.multi_cell(0, 10, sanitize_text(f"• {group}: {', '.join(words)}"))
     
     # Required Resources
     pdf.multi_cell(0, 10, sanitize_text("\nRequired Resources:"))
