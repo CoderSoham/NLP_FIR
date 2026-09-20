@@ -383,18 +383,29 @@ def _summary_and_entities(pdf, data, record):
             groups.setdefault(entity.get("label", "?"), []).append(
                 entity.get("text", ""))
         for label, texts in sorted(groups.items()):
-            seen, unique = set(), []
-            for text in texts:
-                if text.lower() not in seen:
-                    seen.add(text.lower())
-                    unique.append(text)
-            pdf.field(label, ", ".join(unique), label_width=28)
+            pdf.field(label, ", ".join(_dedupe(texts)), label_width=28)
 
 
 # Below this much remaining space, the transcript starts a fresh page. A
 # transcript that begins four lines from the bottom is unreadable; one that
 # leaves two thirds of a page blank looks like a bug.
 TRANSCRIPT_MIN_SPACE_MM = 110
+
+
+def _dedupe(texts):
+    """Distinct mentions, in the order they appeared.
+
+    Case- and punctuation-insensitive, because spaCy's spans keep whatever
+    trailing period ended the sentence -- so "Best Auto Wash" and "Best Auto
+    Wash." were listed as two separate organisations.
+    """
+    seen, unique = set(), []
+    for text in texts:
+        key = "".join(c for c in (text or "").lower() if c.isalnum())
+        if key and key not in seen:
+            seen.add(key)
+            unique.append(text.strip(" .,;:"))
+    return unique
 
 
 def _transcript(pdf, data):

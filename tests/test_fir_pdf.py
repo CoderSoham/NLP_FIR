@@ -237,3 +237,20 @@ def test_the_bullet_survives_sanitising():
 def test_protocol_targets_are_whole_minutes(value, expected):
     """'5.0 minutes' reads as a measurement of something."""
     assert fir_pdf._minutes(value) == expected
+
+
+def test_entity_mentions_are_deduplicated_across_punctuation():
+    """spaCy spans keep the sentence-final period, so 'Best Auto Wash' and
+    'Best Auto Wash.' were listed as two separate organisations."""
+    assert fir_pdf._dedupe(
+        ["Best Auto Wash", "Best Auto Wash.", "the Best Auto Wash", "Jeep"]
+    ) == ["Best Auto Wash", "the Best Auto Wash", "Jeep"]
+
+
+def test_entity_dedup_is_case_insensitive_and_keeps_first_spelling():
+    assert fir_pdf._dedupe(["Bannister", "bannister", "Lydia"]) == [
+        "Bannister", "Lydia"]
+
+
+def test_entity_dedup_drops_punctuation_only_spans():
+    assert fir_pdf._dedupe(["--", "", None, "Flint"]) == ["Flint"]
