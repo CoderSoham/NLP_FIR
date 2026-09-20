@@ -50,7 +50,15 @@ FFMPEG_PATH = ensure_ffmpeg_on_path()
 
 # Audio is truncated to bound worst-case request time; the result reports how
 # much of the call was actually analysed.
-MAX_AUDIO_SECONDS = int(os.environ.get('MAX_AUDIO_SECONDS', 120))
+#
+# The cap exists because local transcription is roughly linear in duration and
+# one long recording would otherwise occupy the only worker for minutes. Hosted
+# transcription does not have that problem -- a ten-minute call comes back in
+# seconds -- so the cap is far higher when it is in use. Truncating a 696-second
+# call to 120 seconds throws away the outcome of the call, which is usually the
+# part that matters.
+_DEFAULT_MAX_AUDIO = 1800 if os.environ.get('ASR_BACKEND') == 'groq' else 120
+MAX_AUDIO_SECONDS = int(os.environ.get('MAX_AUDIO_SECONDS', _DEFAULT_MAX_AUDIO))
 
 # The emotion detector emits 7 classes, so chance is ~0.14. Below this the label
 # carries no information and must not move the severity score.

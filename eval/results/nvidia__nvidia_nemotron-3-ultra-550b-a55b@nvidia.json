@@ -2,12 +2,88 @@
   "backend": "nvidia",
   "model": "nvidia/nemotron-3-ultra-550b-a55b @ nvidia",
   "load_seconds": 0.0,
-  "passed": 53,
-  "total": 54,
+  "passed": 82,
+  "total": 84,
   "rows": [
     {
+      "sample": "call_144.mp3",
+      "seconds": 13.7,
+      "checks": {
+        "incident_type": {
+          "expected": "medical",
+          "got": "medical",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= critical",
+          "got": "high",
+          "pass": true
+        },
+        "weapons": {
+          "expected": false,
+          "got": [],
+          "pass": true
+        },
+        "location": {
+          "expected": null,
+          "got": null,
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 5,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "medical",
+        "severity": "high",
+        "is_in_progress": true,
+        "location": null,
+        "callback_number": null,
+        "caller_name": null,
+        "people_involved": 2,
+        "injuries": [
+          "seizure",
+          "non-responsive",
+          "blood from mouth",
+          "possible drug overdose"
+        ],
+        "weapons": [],
+        "hazards": [],
+        "vehicles": [],
+        "services_needed": [
+          "ems",
+          "police"
+        ],
+        "immediate_actions": [
+          "Dispatch ambulance to scene",
+          "Dispatch deputies to scene",
+          "Attempt to obtain location from caller"
+        ],
+        "summary": "Caller reports two people experiencing medical emergencies: a 19-20 year old female having seizures, non-responsive with blood coming from mouth, and a male yelling. Both may have taken some kind of drug or pill. Caller does not know the address. Ambulance and deputies are en route.",
+        "uncertainties": [
+          "Exact address never provided - caller states 'I'm not sure what the address is. I don't live here.'",
+          "Transcript contains apparent ASR errors: 'feeding my blood' likely garbled, 'lucid gene' vs 'lucid agent' unclear",
+          "Specific drug or substance unknown - caller says 'some kind of pill' and 'some kind of lucid gene/agent'",
+          "Caller's relationship to patients and exact location unclear",
+          "Whether this is a continuation of previous call or new incident"
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "nvidia",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b @ nvidia"
+      }
+    },
+    {
       "sample": "call_206.mp3",
-      "seconds": 24.4,
+      "seconds": 10.7,
       "checks": {
         "incident_type": {
           "expected": "accident",
@@ -31,7 +107,7 @@
         },
         "uncertainties_present": {
           "expected": true,
-          "got": 6,
+          "got": 5,
           "pass": true
         },
         "schema_clean": {
@@ -51,33 +127,28 @@
         "injuries": [],
         "weapons": [],
         "hazards": [
-          "dense fog",
-          "guardrail",
-          "potential secondary crashes"
+          "dense fog"
         ],
         "vehicles": [
-          "caller's vehicle (make/model unknown)",
-          "possible other vehicles in secondary crash"
+          "caller's vehicle",
+          "guardrail"
         ],
         "services_needed": [
           "police",
-          "fire",
           "ems"
         ],
         "immediate_actions": [
           "Dispatch units to I-75 southbound near Gainesville",
           "Warn responders of extremely dense fog",
-          "Check for secondary crashes reported behind caller",
-          "Ensure caller remains off roadway"
+          "Check for secondary accidents reported behind caller"
         ],
-        "summary": "Caller reports hitting a guardrail on I-75 southbound in dense fog just past Gainesville. They heard another crash behind them but see no injuries in their vehicle and are parked as far off the road as possible. No mile marker or callback number was provided.",
+        "summary": "Caller reports their vehicle hit a guardrail on I-75 southbound in dense fog just past Gainesville. They heard a possible secondary crash behind them but see no injuries in their own vehicle. Conditions remain hazardous with near-zero visibility.",
         "uncertainties": [
-          "Exact mile marker not given",
+          "Exact mile marker not provided; caller cannot see signs due to fog",
           "Caller name 'Mary Good' comes from a fragmented utterance ('Mary Good first') and may be inaccurate",
-          "Phone number requested but not provided",
-          "Vehicle color/make/model not obtained due to garbled audio",
-          "Whether the reported second crash caused injuries is unknown",
-          "Portions of the transcript are garbled (e.g., 'see cases')"
+          "Callback phone number never captured",
+          "Number of occupants in caller's vehicle not stated",
+          "Whether other vehicles are actually involved or only heard is unconfirmed"
         ]
       },
       "meta": {
@@ -88,7 +159,7 @@
     },
     {
       "sample": "call_21.mp3",
-      "seconds": 7.4,
+      "seconds": 13.2,
       "checks": {
         "incident_type": {
           "expected": "police",
@@ -107,7 +178,7 @@
         },
         "location": {
           "expected": "24th",
-          "got": "24th Street, across from Mueller Brass, Best Auto Wash",
+          "got": "24th Street across from Mueller Brass, Best Auto Wash",
           "pass": true
         },
         "uncertainties_present": {
@@ -125,7 +196,7 @@
         "incident_type": "other",
         "severity": "low",
         "is_in_progress": true,
-        "location": "24th Street, across from Mueller Brass, Best Auto Wash",
+        "location": "24th Street across from Mueller Brass, Best Auto Wash",
         "callback_number": null,
         "caller_name": null,
         "people_involved": 1,
@@ -139,16 +210,17 @@
           "police"
         ],
         "immediate_actions": [
-          "Contact owner of Best Auto Wash",
-          "Dispatch officers to assist if owner cannot be reached"
+          "Contact owner/manager of Best Auto Wash to remotely open doors or send someone",
+          "Advise caller to look for emergency release button on wall inside bay",
+          "Relay location to patrol unit for welfare check if owner cannot be reached"
         ],
-        "summary": "Caller is stuck inside a self-serve car wash on 24th Street across from Mueller Brass. Both garage doors are shut and will not open. Caller is in a Jeep and has tried calling posted numbers without success. Dispatcher will attempt to contact the car wash owner and may send officers to help.",
+        "summary": "Caller is trapped inside a self-serve car wash on 24th Street across from Mueller Brass (identified as Best Auto Wash). Both garage doors are closed and will not open after the wash cycle; the caller is in a Jeep, uninjured but frightened. No staff are on site. The caller has left messages at posted numbers without response. Dispatcher will attempt to contact the owner.",
         "uncertainties": [
-          "Exact street address not confirmed; only '24th Street' and landmark 'Mueller Brass' given",
-          "Car wash name varies between 'Best Auto Wash' and 'The Best Auto Wash'",
-          "Caller's exact bay or position within car wash unclear",
-          "Whether other people are present outside is uncertain",
-          "Transcript contains ASR errors and garbled sections (e.g., 'super shock or super something', '92', '586')"
+          "Exact street address not confirmed; only '24th Street across from Mueller Brass' given",
+          "Car wash name initially garbled as 'super shock or super something' before caller heard 'Best Auto Wash' from bystanders",
+          "Phone numbers mentioned (92, 586, 949-8440) are incomplete or may be area codes/partial numbers",
+          "ASR errors throughout: 'I'm trying to freak out' likely means 'I'm trying not to freak out'; 'they put a soak on me' may be 'they put a soap on me'",
+          "No callback number provided; caller uses a Boost Mobile phone and worries about minutes"
         ]
       },
       "meta": {
@@ -158,8 +230,83 @@
       }
     },
     {
-      "sample": "call_24.mp3",
-      "seconds": 21.3,
+      "sample": "call_219.mp3",
+      "seconds": 13.7,
+      "checks": {
+        "incident_type": {
+          "expected": "accident",
+          "got": "accident",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= critical",
+          "got": "critical",
+          "pass": true
+        },
+        "weapons": {
+          "expected": false,
+          "got": [],
+          "pass": true
+        },
+        "location": {
+          "expected": "County Road",
+          "got": "corner of 119 and County Road 1; 1640 Bluefield, about three miles south of Union Reservoir",
+          "pass": false
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 6,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "accident",
+        "severity": "critical",
+        "is_in_progress": true,
+        "location": "corner of 119 and County Road 1; 1640 Bluefield, about three miles south of Union Reservoir",
+        "callback_number": null,
+        "caller_name": "Sabrina",
+        "people_involved": null,
+        "injuries": [],
+        "weapons": [],
+        "hazards": [],
+        "vehicles": [
+          "small white plane"
+        ],
+        "services_needed": [
+          "police",
+          "fire",
+          "ems"
+        ],
+        "immediate_actions": [
+          "Dispatch fire, EMS, and police to both reported locations",
+          "Confirm exact crash site and assess for survivors",
+          "Establish command post and coordinate with aviation authorities"
+        ],
+        "summary": "Two callers report a small white plane crash near Longmont, Colorado. The first caller at the intersection of 119 and County Road 1 witnessed the plane go down in a south field and heard a boom. The second caller at 1640 Bluefield, three miles south of Union Reservoir, saw the plane spiral below treetops and heard the impact. No smoke or flames are visible yet. Emergency units are en route.",
+        "uncertainties": [
+          "First caller's phone number is garbled in the transcript",
+          "Exact crash location may be between the two reported positions",
+          "Plane type described only as 'small white plane' and 'two-seater' with no tail number",
+          "No information on injuries, occupants, or whether the plane is occupied",
+          "ASR error: 'I'm in the plane right now' likely a recognition artifact",
+          "Second caller's name and callback number not provided"
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "nvidia",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b @ nvidia"
+      }
+    },
+    {
+      "sample": "call_225.mp3",
+      "seconds": 22.2,
       "checks": {
         "incident_type": {
           "expected": "police",
@@ -174,15 +321,14 @@
         "weapons": {
           "expected": true,
           "got": [
-            "high standard .22 handgun",
-            "revolver",
-            "possible additional firearm"
+            "axe",
+            "handgun"
           ],
           "pass": true
         },
         "location": {
-          "expected": "Bannister",
-          "got": "1331 Bannister Road",
+          "expected": null,
+          "got": null,
           "pass": true
         },
         "uncertainties_present": {
@@ -199,51 +345,46 @@
       "record": {
         "incident_type": "police",
         "severity": "critical",
-        "is_in_progress": true,
-        "location": "1331 Bannister Road",
+        "is_in_progress": false,
+        "location": null,
         "callback_number": null,
-        "caller_name": null,
-        "people_involved": null,
+        "caller_name": "Desiree Stapler-Fenny",
+        "people_involved": 3,
         "injuries": [
-          "officer shot through right arm"
+          "beaten up",
+          "leg injury (pressure)",
+          "axe in head (fatal)",
+          "gunshot to head (fatal)"
         ],
         "weapons": [
           {
-            "item": "high standard .22 handgun",
-            "quote": "It looked like a high standard .22"
+            "item": "axe",
+            "quote": "the axe is in Jake's head and the gun is in Brian's hand"
           },
           {
-            "item": "revolver",
-            "quote": "he pulled a revolver on me"
-          },
-          {
-            "item": "possible additional firearm",
-            "quote": "he might be armed with another gun"
+            "item": "handgun",
+            "quote": "the axe is in Jake's head and the gun is in Brian's hand"
           }
         ],
         "hazards": [],
-        "vehicles": [
-          "maroon Oldsmobile (described as 92 Old Cutlass Sierra, Maroon Color)",
-          "red automobile"
-        ],
+        "vehicles": [],
         "services_needed": [
           "police",
           "ems"
         ],
         "immediate_actions": [
-          "establish perimeter at Bannister and Lydia",
-          "call out K9 unit",
-          "broadcast suspect and vehicle information citywide",
-          "seal off area, no officers in woods",
-          "coordinate responding units to contain suspect"
+          "Dispatch police to secure the scene and investigate homicide/suicide",
+          "Dispatch EMS for caller's injuries (beaten up, leg injury)",
+          "Instruct caller not to touch anything and to stay in place (porch if possible)",
+          "Obtain exact address from caller"
         ],
-        "summary": "An officer was shot in the right arm during a traffic stop at 1331 Bannister Road. The suspect, a white male in his 50s described as suicidal and possibly armed with multiple weapons (including a .22 handgun and a revolver), fled southbound on Lydia. A perimeter is being established, K9 has been requested, and a citywide broadcast has been issued for the suspect and a maroon Oldsmobile Cutlass Sierra.",
+        "summary": "A 17-year-old caller reports her ex-boyfriend Brian White broke into her home, killed her current boyfriend Jake Burns with an axe, held her hostage and beat her, then shot himself in the head. The axe remains in Jake's head and the gun is in Brian's hand. The caller is injured and cannot walk; she needs EMS and police.",
         "uncertainties": [
-          "Conflicting addresses: 1331 Bannister Road, 1330 Bannister Road, 1331 East Spanish (likely garbled), 1331 East Bannister, 9640 Lydia, 3716 East 933",
-          "Conflicting reports on suspect location: initially reported on foot southbound on Lydia, later reported still in maroon Oldsmobile",
-          "License plate details unclear: '302 Young John Adams' and '302 Young John Adam' may be call signs or partial plates",
-          "Exact number of weapons and whether suspect was hit by gunfire",
-          "Transcript contains significant radio noise and overlapping transmissions, making some details unreliable"
+          "No address or location provided beyond room descriptions (breakfast nook, living room, kitchen)",
+          "Caller's name spelling uncertain (Stapler-Fenny)",
+          "Exact timeline of events not fully established",
+          "No callback number given",
+          "Transcript appears to be partial; call may have continued"
         ]
       },
       "meta": {
@@ -253,8 +394,8 @@
       }
     },
     {
-      "sample": "call_456.mp3",
-      "seconds": 29.0,
+      "sample": "call_24.mp3",
+      "seconds": 15.0,
       "checks": {
         "incident_type": {
           "expected": "police",
@@ -269,8 +410,110 @@
         "weapons": {
           "expected": true,
           "got": [
-            "handgun",
-            "handgun"
+            "handgun (.22 caliber)",
+            "revolver",
+            "possible additional firearm",
+            "multiple weapons"
+          ],
+          "pass": true
+        },
+        "location": {
+          "expected": "Bannister",
+          "got": "1331 Bannister Road; 1331 East Bannister",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 6,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "police",
+        "severity": "critical",
+        "is_in_progress": true,
+        "location": "1331 Bannister Road; 1331 East Bannister",
+        "callback_number": null,
+        "caller_name": null,
+        "people_involved": null,
+        "injuries": [
+          "officer shot through right arm"
+        ],
+        "weapons": [
+          {
+            "item": "handgun (.22 caliber)",
+            "quote": "It looked like a high standard .22"
+          },
+          {
+            "item": "revolver",
+            "quote": "he pulled a revolver on me"
+          },
+          {
+            "item": "possible additional firearm",
+            "quote": "he might be armed with another gun"
+          },
+          {
+            "item": "multiple weapons",
+            "quote": "he's carrying multiple weapons"
+          }
+        ],
+        "hazards": [],
+        "vehicles": [
+          "maroon Oldsmobile",
+          "302 Young John Adams (license plate)",
+          "92 Old Cutlass Sierra, Maroon Color"
+        ],
+        "services_needed": [
+          "police",
+          "ems"
+        ],
+        "immediate_actions": [
+          "establish perimeter at Bannister and Lydia",
+          "call K9 unit",
+          "broadcast suspect description citywide",
+          "seal off area",
+          "coordinate officer safety"
+        ],
+        "summary": "An officer was shot during a traffic stop at 1331 Bannister Road. The suspect, a white male in his 50s, fled southbound on Lydia, is armed with at least a .22 handgun and a revolver, and is considered suicidal. The suspect may still be in a maroon Oldsmobile. Perimeter and K9 are being deployed.",
+        "uncertainties": [
+          "Transcript contains garbled radio traffic and overlapping voices",
+          "Conflicting reports: suspect on foot vs still in vehicle",
+          "Address variations: 1331 Bannister Road, 1330 Bannister Road, 1331 East Spanish, 1331 East Bannister",
+          "License plate numbers partially heard: '302 Young John Adams', '3716 East 933'",
+          "Exact number of officers involved unclear",
+          "Whether suspect was hit by return fire unknown"
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "nvidia",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b @ nvidia"
+      }
+    },
+    {
+      "sample": "call_456.mp3",
+      "seconds": 26.5,
+      "checks": {
+        "incident_type": {
+          "expected": "police",
+          "got": "police",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= critical",
+          "got": "critical",
+          "pass": true
+        },
+        "weapons": {
+          "expected": true,
+          "got": [
+            "gun",
+            "gun"
           ],
           "pass": true
         },
@@ -299,17 +542,17 @@
         "caller_name": "Edwin Waters",
         "people_involved": 3,
         "injuries": [
-          "gunshot wound",
+          "shot",
           "hurt bad"
         ],
         "weapons": [
           {
-            "item": "handgun",
-            "quote": "I just shot a man attacking me."
+            "item": "gun",
+            "quote": "There's been a shooting and I just shot a man attacking me."
           },
           {
-            "item": "handgun",
-            "quote": "I do not have it set on the table right here where I am."
+            "item": "gun",
+            "quote": "Do you still have the gun in your hand? I do not have it set on the table right here where I am."
           }
         ],
         "hazards": [],
@@ -320,17 +563,88 @@
         ],
         "immediate_actions": [
           "Dispatch police and EMS to 1109 East Alameda",
-          "Secure the scene and ensure the firearm is safe",
-          "Provide medical aid to the victim"
+          "Secure the scene and ensure the firearm remains on the table",
+          "Provide medical aid to the gunshot victim"
         ],
-        "summary": "Caller Edwin Waters reports a shooting at 1109 East Alameda. He states he shot a man who was attacking him. The victim is down and badly hurt. The firearm is on a table. The caller is about 15 feet away; the victim's brother is with him. Police and EMS are needed immediately.",
+        "summary": "Caller Edwin Waters reports a shooting at 1109 East Alameda. He states he shot a man who was attacking him; the victim is down and badly injured. The caller has placed the gun on a table and is about 15 feet away; the victim's brother is with him. Police and EMS are needed immediately.",
         "uncertainties": [
-          "Exact address may have ASR errors (Alameda)",
-          "Victim's condition (awake, breathing) unknown",
-          "Number of people at scene not fully established",
-          "Type of firearm not specified",
-          "Caller's phone number may have recognition errors",
-          "Transcript may contain recognition errors in names and numbers"
+          "Exact condition of the victim (awake, breathing) is unknown.",
+          "Victim's age is a guess (45).",
+          "Address lacks city/state; may be incomplete.",
+          "Transcript shows possible ASR errors (e.g., 'PENF-A911').",
+          "Caller indicates audio difficulties ('I'm sorry, I can't hear you').",
+          "Type of firearm not specified (handgun, rifle, etc.)."
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "nvidia",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b @ nvidia"
+      }
+    },
+    {
+      "sample": "call_56.mp3",
+      "seconds": 40.5,
+      "checks": {
+        "incident_type": {
+          "expected": "police",
+          "got": "police",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= critical",
+          "got": "high",
+          "pass": true
+        },
+        "weapons": {
+          "expected": false,
+          "got": [],
+          "pass": true
+        },
+        "location": {
+          "expected": "Ray Road",
+          "got": "1680 Ray Road",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 5,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "police",
+        "severity": "high",
+        "is_in_progress": true,
+        "location": "1680 Ray Road",
+        "callback_number": null,
+        "caller_name": "Irizarry",
+        "people_involved": 4,
+        "injuries": [],
+        "weapons": [],
+        "hazards": [],
+        "vehicles": [],
+        "services_needed": [
+          "police"
+        ],
+        "immediate_actions": [
+          "Dispatch police to 1680 Ray Road for missing 11-month-old infant",
+          "Initiate area search including open bedroom window",
+          "Obtain full description of child and clothing (pink pajamas)",
+          "Interview parents on scene for timeline and possible suspects"
+        ],
+        "summary": "An 11-month-old baby girl (last name Creech) is missing from her crib at 1680 Ray Road. The bedroom window was found open. The child was last seen around 11:30 PM last night wearing pink pajamas. The father recently returned home. No suspect information is available.",
+        "uncertainties": [
+          "Address initially given as 1160 Ray Road, then corrected to 1680; dispatcher confirmed 1680 but original discrepancy remains",
+          "Reference to 'Rondo Lake' is unclear \u2014 may be a location, a name, or ASR error",
+          "Phrase 'our act' (father just got home from our act) is ambiguous \u2014 could be work, military, or other",
+          "Callback phone number not provided in transcript",
+          "Caller's first name and exact relationship to child not stated (last name Irizarry, baby's last name Creech, mother's first name Michelle)"
         ]
       },
       "meta": {
@@ -341,7 +655,7 @@
     },
     {
       "sample": "call_572.mp3",
-      "seconds": 15.2,
+      "seconds": 50.3,
       "checks": {
         "incident_type": {
           "expected": "police",
@@ -385,9 +699,10 @@
         "caller_name": null,
         "people_involved": null,
         "injuries": [
-          "daughter shot in head, bleeding from mouth",
-          "husband shot",
-          "caller shot"
+          "shot in the head (daughter)",
+          "bleeding out of her mouth (daughter)",
+          "shot (husband)",
+          "shot (caller)"
         ],
         "weapons": [
           {
@@ -402,17 +717,16 @@
           "ems"
         ],
         "immediate_actions": [
-          "Dispatch police and EMS to the scene",
-          "Obtain precise address and location details",
-          "Keep caller on the line for ongoing safety assessment",
-          "Determine number and location of shooters"
+          "Dispatch police to Air Walk Arizona",
+          "Dispatch EMS for multiple gunshot victims",
+          "Keep caller on line and gather suspect information"
         ],
-        "summary": "Caller reports an active shooting at Air Walk Arizona where her 10-year-old daughter and husband have been shot, with the daughter shot in the head and bleeding from the mouth. The caller herself has also been shot. The shooters are reportedly returning to the scene. Immediate police and EMS response required.",
+        "summary": "Caller reports an active shooting at Air Walk Arizona. Her 10-year-old daughter and husband have been shot, with the daughter shot in the head and bleeding from the mouth. The caller has also been shot and cannot move. The shooters are reportedly returning to the scene.",
         "uncertainties": [
-          "Location 'Air Walk Arizona' may be incomplete or garbled; no street address provided",
-          "Exact number of shooters unknown",
-          "Caller's injury location not specified",
-          "Transcript ends abruptly before dispatcher completes actions"
+          "Location 'Air Walk Arizona' may be an ASR error; no verified address provided.",
+          "Number of shooters unknown; caller was asleep and cannot provide details.",
+          "Caller's own gunshot wound location not yet determined.",
+          "Transcript ends mid-call; full situation not captured."
         ]
       },
       "meta": {
@@ -423,7 +737,7 @@
     },
     {
       "sample": "call_589.mp3",
-      "seconds": 103.7,
+      "seconds": 30.4,
       "checks": {
         "incident_type": {
           "expected": "medical",
@@ -447,7 +761,7 @@
         },
         "uncertainties_present": {
           "expected": true,
-          "got": 6,
+          "got": 5,
           "pass": true
         },
         "schema_clean": {
@@ -467,7 +781,8 @@
         "injuries": [
           "not breathing",
           "cold and stiff",
-          "lymphoma"
+          "lymphoma",
+          "mental health issues"
         ],
         "weapons": [],
         "hazards": [],
@@ -477,18 +792,18 @@
         ],
         "immediate_actions": [
           "Dispatch EMS to the scene",
-          "Obtain exact location from caller",
-          "Keep caller on the line for updates",
-          "Provide CPR instructions if caller returns to patient"
+          "Obtain exact location of the patient",
+          "Provide CPR instructions if caller returns to patient",
+          "Verify caller's address and contact information",
+          "Keep caller on line until help arrives"
         ],
-        "summary": "Caller Jolene Harvey reports a 60-year-old male who is cold, stiff, and not breathing after she attempted CPR. The patient has a history of lymphoma and mental health issues. The caller is currently at a neighbor's house; EMS is en route but the exact address has not been provided.",
+        "summary": "Caller Jolene Harvey reports a 60-year-old male who is cold, stiff, and not breathing after she searched for him all day. She attempted CPR but stopped due to exhaustion and went to a neighbor's house. The patient has a history of lymphoma and mental health problems. EMS is en route.",
         "uncertainties": [
-          "No address or location given for the incident; caller only states she is at a neighbor's house.",
-          "Callback number unavailable; caller's cell phone died.",
-          "Transcript begins mid-conversation; initial speaker may be a third party relaying information.",
-          "Possible ASR errors: 'gang area' likely misheard; last name spelled both 'Harvey' and 'Hardy'.",
-          "Relationship between caller and patient not explicitly stated.",
-          "Number of people at scene unclear beyond caller and patient."
+          "Exact address of the patient not provided; caller is at a neighbor's house but patient location unclear",
+          "Caller's cell phone died, no callback number available",
+          "Transcript contains likely ASR errors (e.g., 'gang area' may be garbled)",
+          "Spelling of caller's last name inconsistent (Harvey vs Hardy)",
+          "Unclear if police have been notified or are needed for death investigation"
         ]
       },
       "meta": {
@@ -499,7 +814,7 @@
     },
     {
       "sample": "call_645.mp3",
-      "seconds": 41.2,
+      "seconds": 74.7,
       "checks": {
         "incident_type": {
           "expected": "police",
@@ -541,8 +856,8 @@
         "caller_name": null,
         "people_involved": null,
         "injuries": [
-          "really messed up",
-          "bound up, feet tied"
+          "bound, feet tied",
+          "caller says neighbor is 'really messed up'"
         ],
         "weapons": [],
         "hazards": [],
@@ -552,18 +867,103 @@
           "ems"
         ],
         "immediate_actions": [
-          "Dispatch police to Lake Robert Slandering, Winter Garden",
-          "Dispatch EMS for possible injuries",
-          "Keep caller on line for updates",
-          "Obtain suspect description"
+          "Dispatch police to reported address",
+          "Request EMS for bound victim",
+          "Keep caller on line for suspect information",
+          "Obtain suspect descriptions and direction of travel"
         ],
-        "summary": "Caller reports a home invasion at a neighbor's house on Lake Robert Slandering in Winter Garden. The neighbor is bound and appears seriously injured. Suspects may still be on scene; caller is unable to see outside.",
+        "summary": "Caller reports a home invasion at Lake Robert Slandering in Winter Garden. The neighbor is bound with feet tied and appears injured. Suspects may still be on scene; caller is unable to see outside. Police and EMS needed urgently.",
         "uncertainties": [
-          "Address lacks a house number; 'Lake Robert Slandering' may be an ASR error.",
-          "Number and description of suspects are unclear.",
-          "Victim's exact injuries are not specified beyond 'really messed up' and being bound.",
-          "It is unknown whether suspects are still inside the residence.",
-          "Transcript ends mid-call, so final outcome is unknown."
+          "Address 'Lake Robert Slandering' may be an ASR error (e.g., 'Lake Roberts Landing')",
+          "Caller's statements are fragmented and emotional, making details unclear",
+          "Number and description of suspects not established",
+          "Victim's exact condition unclear beyond being bound",
+          "Call cuts off mid-sentence"
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "nvidia",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b @ nvidia"
+      }
+    },
+    {
+      "sample": "call_696.mp3",
+      "seconds": 43.5,
+      "checks": {
+        "incident_type": {
+          "expected": "police",
+          "got": "police",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= critical",
+          "got": "critical",
+          "pass": true
+        },
+        "weapons": {
+          "expected": true,
+          "got": [
+            "firearm",
+            "firearm"
+          ],
+          "pass": true
+        },
+        "location": {
+          "expected": "Dennis",
+          "got": "Dennis' Road Drive, pool hall",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 5,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "police",
+        "severity": "critical",
+        "is_in_progress": true,
+        "location": "Dennis' Road Drive, pool hall",
+        "callback_number": null,
+        "caller_name": null,
+        "people_involved": null,
+        "injuries": [],
+        "weapons": [
+          {
+            "item": "firearm",
+            "quote": "they're shooting out there"
+          },
+          {
+            "item": "firearm",
+            "quote": "They shoot up the car"
+          }
+        ],
+        "hazards": [],
+        "vehicles": [
+          "car"
+        ],
+        "services_needed": [
+          "police",
+          "ems"
+        ],
+        "immediate_actions": [
+          "Advise caller to stay inside and not go outside",
+          "Dispatch police units to the pool hall on Dennis' Road Drive",
+          "Dispatch EMS as a precaution for potential injuries"
+        ],
+        "summary": "Caller reports active shooting outside a pool hall on Dennis' Road Drive. Shots have been fired and a car has been shot up. The caller is inside the pool hall and afraid to exit. Dispatcher advises the caller to remain inside and confirms that units are en route.",
+        "uncertainties": [
+          "Transcript contains garbled phrases (e.g., 'digger's throw', 'preaching somebody') likely due to ASR errors.",
+          "Caller does not know the exact name of the club or confirm the address beyond 'Dennis' Road Drive'.",
+          "No information on whether anyone has been injured; caller repeatedly says 'I don't know' when asked about victims.",
+          "Exact number of shooters or weapons not specified beyond general gunfire.",
+          "Partial recording may cut off before call concludes."
         ]
       },
       "meta": {
@@ -574,7 +974,7 @@
     },
     {
       "sample": "call_9.mp3",
-      "seconds": 8.0,
+      "seconds": 111.9,
       "checks": {
         "incident_type": {
           "expected": "police",
@@ -612,8 +1012,8 @@
         "severity": "medium",
         "is_in_progress": true,
         "location": "7th Street Court",
-        "callback_number": "605",
-        "caller_name": "Mike Forbus",
+        "callback_number": null,
+        "caller_name": null,
         "people_involved": 3,
         "injuries": [],
         "weapons": [],
@@ -623,15 +1023,15 @@
           "police"
         ],
         "immediate_actions": [
-          "Dispatch police to 7th Street Court for domestic disturbance involving two juveniles physically fighting",
-          "Advise caller to keep safe distance and avoid physical intervention"
+          "Dispatch police officers to 7th Street Court for domestic disturbance involving two juveniles",
+          "Advise caller to keep safe distance until officers arrive"
         ],
-        "summary": "Caller Mike Forbus reports his two daughters, ages 12 and 13.5, are physically fighting at 7th Street Court. The 12-year-old kicked a hole in a door and is described as completely out of control; the caller cannot physically restrain her. Dispatcher apologized for an inappropriate remark and will send police when available.",
+        "summary": "Caller reports two daughters, ages 12 and 13.5, physically fighting at home; one kicked a hole in a door and the 12-year-old is described as completely out of control. Caller cannot physically manage the situation. Police are needed but currently on another emergency call; dispatcher will send officers as soon as available.",
         "uncertainties": [
-          "Exact address incomplete: only '7th Street Court' given, no street number or city",
-          "Callback number '605' may be a badge/ID rather than a phone number",
-          "Dispatcher's joke about shooting is not a weapon present at scene",
-          "Call ends before police dispatch is confirmed"
+          "Address lacks street number, city, and state; only '7th Street Court' given",
+          "Caller's name and callback number not provided; dispatcher identified as Mike Forbus, number 605",
+          "Exact nature of 'out of control' behavior not detailed beyond fighting and property damage",
+          "No information on whether any weapons are present; dispatcher's inappropriate joke about shooting is not a weapon"
         ]
       },
       "meta": {
@@ -642,7 +1042,7 @@
     },
     {
       "sample": "call_93.mp3",
-      "seconds": 20.2,
+      "seconds": 11.1,
       "checks": {
         "incident_type": {
           "expected": "medical",
@@ -694,17 +1094,17 @@
           "ems"
         ],
         "immediate_actions": [
+          "Dispatch EMS for choking victim not breathing",
           "Provide Heimlich maneuver instructions",
-          "Dispatch EMS to location",
-          "Keep caller on line for updates"
+          "Confirm address and callback number"
         ],
-        "summary": "Caller reports his 39-year-old girlfriend is choking and not breathing on the kitchen floor. Address given as 52-10-5-1, callback number 539-2443. EMS dispatched; dispatcher providing Heimlich instructions.",
+        "summary": "Caller reports his girlfriend is choking and not breathing on the kitchen floor. Victim is 39 years old. Address given as 52-10-5-1, callback number 539-2443. Dispatcher advises Heimlich maneuver and states help is on the way.",
         "uncertainties": [
           "Address '52-10-5-1' appears incomplete or garbled",
-          "Meaning of 'socket behind her' unclear",
-          "Exact object causing choking unknown",
-          "Caller's name not provided",
-          "Initial statement 'my girlfriend shot me' retracted but reason unclear"
+          "Caller's name not provided; 'Jake' mentioned but unclear if caller or victim",
+          "Phrase 'She's got a socket behind her' is unclear and may be ASR error",
+          "Initial statement 'my girlfriend shot me' contradicted immediately; no weapon present",
+          "Transcript contains multiple ASR artifacts (e.g., 'Anvil, please!')"
         ]
       },
       "meta": {

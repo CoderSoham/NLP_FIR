@@ -33,7 +33,9 @@ no model is available the pipeline still produces a complete result.
 ### Requirements
 
 - **Python 3.10–3.12**
-- **~8 GB disk** for model weights, downloaded on first run
+- **~8 GB disk** for model weights, downloaded on first run. If your home
+  directory is small, `cp .venvrc.example .venvrc`, set the paths and
+  `source` it before installing.
 - **Optional: an NVIDIA GPU.** Everything works on CPU, just slower.
 
 No system packages are required. FFmpeg ships as a Python dependency.
@@ -64,18 +66,6 @@ hang for some minutes. That happens once; afterwards they load from cache.
 No sample audio ships with this repository — `.gitignore` excludes audio
 deliberately, see [Handling call data](#handling-call-data). Use any recording
 of your own.
-
-### Put the models somewhere other than your home directory
-
-Weights go to the HuggingFace cache under `~/.cache` by default, which is a
-problem on a small root partition:
-
-```bash
-export HF_HOME=/path/with/space/hf
-export XDG_CACHE_HOME=/path/with/space/cache
-```
-
----
 
 ## Free hosted models (recommended)
 
@@ -125,20 +115,19 @@ container or CI can supply them instead.
 
 ### Which model
 
-`python -m utils.llm_providers nvidia` lists what your account actually serves
-and ranks it for this task. The catalogue is a superset of what any given
-account can call, and identifiers change — one default shipped here previously
-went end-of-life and returned `410 Gone`, which is why the command queries the
-provider rather than trusting a hardcoded name.
+The default is `nvidia/nemotron-3-ultra-550b-a55b`. To see what your account
+actually serves — catalogues are a superset of what a given key can call, and
+identifiers change:
 
-The default is `nvidia/nemotron-3-ultra-550b-a55b`, chosen by measurement — see
-`eval/`.
+```bash
+python -m utils.llm_providers nvidia
+```
 
 ### Other providers
 
 `LLM_BACKEND` also accepts `groq`, `openrouter`, `cerebras`, `mistral`,
-`anthropic`, and the local servers `ollama` and `llamacpp` — anything speaking
-the OpenAI chat-completions shape. `python -m utils.llm_providers` lists them.
+`anthropic`, `ollama` and `llamacpp` — anything speaking the OpenAI
+chat-completions shape. `python -m utils.llm_providers` lists them.
 
 > **A hosted provider receives your data.** The language model receives the
 > transcript; hosted transcription receives **the audio itself**. Emergency-call
@@ -155,27 +144,17 @@ No keys needed. `LLM_BACKEND=local` and `ASR_BACKEND=local` are the defaults.
 FORCE_CPU=0 python app.py     # use CUDA where it is available
 ```
 
-Device and quantisation are resolved from what your card actually supports.
-Pascal cards (GTX 10-series) have no float16 in CTranslate2, for instance, so
-int8 is selected.
+Device and quantisation are resolved from what the card reports as supported,
+so an older GPU falls back to int8 rather than failing.
 
 ### Model sizes
 
 `WHISPER_MODEL_NAME` chooses the speech model — `large-v3-turbo` on a GPU,
 `base` on CPU, because turbo on CPU is slow.
 
-### Choosing a local language model for your hardware
+### Choosing a local language model
 
-```bash
-python -m utils.llm_hardware
-```
-
-```
-GPU: NVIDIA GeForce GTX 1060 (6.4 GB VRAM), 16.6 GB system RAM
-
-  [recommended] Qwen/Qwen2.5-1.5B-Instruct    1.5B  needs 3.2 GB VRAM
-  [too large  ] Qwen/Qwen2.5-3B-Instruct        3B  needs 6.2 GB VRAM
-```
+`python -m utils.llm_hardware` inspects the machine and lists which models fit.
 
 ```bash
 LOCAL_LLM_MODEL=Qwen/Qwen2.5-3B-Instruct python app.py
@@ -183,8 +162,8 @@ LOCAL_LLM_DEVICE=cpu python app.py          # bigger model, no VRAM limit
 ```
 
 Only one large model is GPU-resident at a time — speech, classical NLP and the
-language model take the card in turn. On a card with room to spare, set
-`GPU_EXCLUSIVE=0` to keep them all loaded.
+language model take the card in turn. `GPU_EXCLUSIVE=0` keeps them all loaded
+where there is room.
 
 ## API
 
@@ -242,28 +221,16 @@ Every setting is an environment variable, read in `config.py`.
 ### Layout
 
 ```
-app.py                  Flask routes
-config.py               Environment-backed settings
-stations.json           Dispatch station registry (edit this, not the code)
-eval/                   Evaluation harness, labels and stored results
-utils/
-  asr.py                Speech recognition, with a transcript cache
-  asr_cloud.py          Hosted transcription (Groq) and the cache itself
-  audio_clean.py        Pre-transcription conditioning
-  audio_utils.py        Pipeline orchestration, models, PDF
-  dispatch.py           Station selection
-  gpu.py                One large model on the GPU at a time
-  llm.py                LLM backends: local, hosted, none
-  llm_providers.py      OpenAI-compatible providers, hosted and local
-  evidence.py           Verifies a quoted claim against the transcript
-  llm_hardware.py       Which models fit this machine
-  extraction_schema.py  The structured record and its prompt
-  severity.py           Severity scoring
-  signals.py            Transcript phrase detection
-  summary.py            Summary budgeting and quality gate
-  retention.py          Deleting stored audio and reports
-tests/                  Runs without the ML stack installed
+app.py            Flask routes
+config.py         Environment-backed settings
+stations.json     Dispatch station registry — edit this, not the code
+eval/             Evaluation harness, labels, stored results
+utils/            Pipeline stages, one concern per module
+tests/            Runs without the ML stack installed
 ```
+
+`utils/audio_utils.py` orchestrates the pipeline and owns the models. Anything
+testable without a model lives in its own module beside it.
 
 ### Evaluating a change
 
@@ -272,9 +239,9 @@ python -m eval.run --backend nvidia              # scores against eval/labels.js
 python -m eval.run --backend local --model ...   # compare
 ```
 
-Runs on **saved transcripts, not audio**, so comparing models costs no
-transcription. Full extractions are written to `eval/results/`, which means a
-scoring change can be re-applied to past runs without calling a model again.
+Runs on saved transcripts, not audio, so comparing models costs no
+transcription. Full extractions are written to `eval/results/`, so a scoring
+change can be re-applied to past runs without calling a model again.
 
 ### Tests
 
@@ -293,16 +260,14 @@ on each so a broken install cannot pass unnoticed.
 
 ### Adding a pipeline stage
 
-Stages are ordinary functions called from `process_audio_file` in
-`utils/audio_utils.py`. Two conventions worth keeping:
+Stages are ordinary functions called from `process_audio_file`. Two conventions:
 
-- **Put the logic in its own module and the model in `audio_utils`.** Anything
-  that can be tested without loading a model should be importable without one.
-- **Return your uncertainty.** Several stages report *how* they reached a
-  result — `dispatch` reports whether it matched a location or fell back,
-  `signals` reports which words fired, ASR reports per-segment confidence. A
-  result that hides its own weakness is the failure mode this codebase has hit
-  most often.
+- **Keep the logic out of `audio_utils`.** Anything testable without a model
+  should be importable without one.
+- **Return your uncertainty.** `dispatch` says whether it matched a location or
+  fell back, `signals` says which words fired, ASR reports per-segment
+  confidence. A result that hides its own weakness is the failure mode this
+  codebase hits most often.
 
 ### Handling call data
 

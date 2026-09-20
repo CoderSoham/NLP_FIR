@@ -300,3 +300,49 @@ code {
   padding: 1px 6px;
   font-size: 0.9em;
 }
+
+/* ---- Progress -----------------------------------------------------------
+   The pipeline takes tens of seconds. A spinner alone says only "wait"; the
+   stage line says what is happening, and the completed list shows where the
+   time actually went -- which is the same question the maintainer has. */
+
+.progress-card { display: flex; align-items: center; gap: 20px; }
+
+.spinner {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Respect a user who has asked for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation-duration: 3s; }
+}
+
+.progress-text { min-width: 0; }
+.stage { margin: 0; font-size: 1.1rem; font-weight: 600; }
+.progress-text .meta { margin: 4px 0 0; }
+
+.steps { list-style: none; padding: 0; margin: 16px 0; }
+
+.steps li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 14px;
+  border-left: 3px solid var(--accent);
+  background: var(--surface);
+  border-radius: 0 6px 6px 0;
+  margin-bottom: 6px;
+  animation: appear 0.25s ease-out;
+}
+
+.steps li em { font-style: normal; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+@keyframes appear { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; } }

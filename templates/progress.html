@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Processing — 911 First Responder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>911 First Responder</h1>
+
+    {% if failed %}
+    <div class="notice warn section">
+      <strong>Processing failed.</strong>
+      <p><code>{{ failed }}</code></p>
+      <p><a href="{{ url_for('index') }}" class="button">Try another recording</a></p>
+    </div>
+    {% else %}
+    <div class="section progress-card">
+      <div class="spinner" aria-hidden="true"></div>
+      <div class="progress-text">
+        <p class="stage" id="stage">Starting…</p>
+        <p class="meta"><span id="elapsed">0</span>s elapsed</p>
+      </div>
+    </div>
+
+    <ol class="steps" id="steps"></ol>
+
+    {% if audio_url %}
+    <div class="section">
+      <h2>Your recording</h2>
+      <audio controls src="{{ audio_url }}"></audio>
+    </div>
+    {% endif %}
+    {% endif %}
+  </div>
+
+  <script>
+    const jobId = {{ job_id|tojson }};
+    const stageEl = document.getElementById('stage');
+    const elapsedEl = document.getElementById('elapsed');
+    const stepsEl = document.getElementById('steps');
+    const seen = new Set();
+
+    async function poll() {
+      let state;
+      try {
+        const res = await fetch(`/api/jobs/${jobId}`);
+        if (!res.ok) throw new Error(`status ${res.status}`);
+        state = await res.json();
+      } catch (err) {
+        // A transient failure should not abandon a job that is still running.
+        stageEl.textContent = 'Lost contact with the server, retrying…';
+        return setTimeout(poll, 3000);
+      }
+
+      stageEl.textContent = state.stage;
+      elapsedEl.textContent = state.elapsed;
+
+      // Completed stages keep the time they took, so a slow one is visible.
+      for (const h of state.history) {
+        if (h.seconds == null || seen.has(h.stage)) continue;
+        seen.add(h.stage);
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${h.stage}</span><em>${h.seconds}s</em>`;
+        stepsEl.appendChild(li);
+      }
+
+      if (state.status === 'done')   return window.location = `/result/${jobId}`;
+      if (state.status === 'failed') return window.location = `/result/${jobId}`;
+      setTimeout(poll, 700);
+    }
+    poll();
+  </script>
+</body>
+</html>

@@ -80,3 +80,38 @@ def test_api_returns_the_analysis_as_json(pipeline):
     assert body["report_id"] == pipeline.report_id
     assert body["severity"] == "high"
     assert body["plots"] == ["waveform", "mfcc", "pitch", "entities"]
+
+
+def test_upload_returns_a_progress_page_not_a_result(pipeline):
+    """Processing is a background job now: the POST must return immediately."""
+    from conftest import start
+    body = start(pipeline.client).get_data(as_text=True)
+    assert "const jobId" in body
+    assert "Transcription" not in body
+
+
+def test_job_status_reports_stages_then_completion(pipeline):
+    import re, time
+    from conftest import start
+    body = start(pipeline.client).get_data(as_text=True)
+    job_id = re.search(r'const jobId = "([0-9a-f]{32})"', body).group(1)
+    for _ in range(200):
+        state = pipeline.client.get(f"/api/jobs/{job_id}").get_json()
+        if state["status"] == "done":
+            break
+        time.sleep(0.02)
+    assert state["status"] == "done"
+    assert [h["stage"] for h in state["history"]][:2] == [
+        "Loading audio", "Transcribing the call"]
+    assert all(h["seconds"] is not None for h in state["history"])
+
+
+def test_a_malformed_job_id_is_rejected(pipeline):
+    assert pipeline.client.get("/api/jobs/not-a-job").status_code == 404
+    assert pipeline.client.get("/result/not-a-job").status_code == 404
+
+
+def test_an_unknown_job_is_404(pipeline):
+    absent = "d" * 32
+    assert pipeline.client.get(f"/api/jobs/{absent}").status_code == 404
+    assert pipeline.client.get(f"/result/{absent}").status_code == 404

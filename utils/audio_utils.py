@@ -30,7 +30,7 @@ from utils.severity import severity_score, severity_label
 from utils.summary import length_budget, is_informative
 from utils.llm import extract_incident
 from utils import gpu
-from utils.asr import transcribe as asr_transcribe
+from utils.asr import transcribe_file as asr_transcribe_file
 from utils.audio_clean import clean_audio
 from typing import Optional, Tuple
 
@@ -90,6 +90,39 @@ def unload_nlp_models():
     # spaCy stays: it is CPU-only and cheap to keep.
     gpu.empty_cache()
     return True
+
+
+STAGE_WARNINGS = []
+
+
+def note_stage_failure(stage, exc):
+    """Record a degraded stage once, in a form a reader can act on.
+
+    A substituted neutral default is indistinguishable from a genuine neutral
+    reading, so every substitution is recorded rather than swallowed.
+    """
+    message = f"{stage}: {type(exc).__name__}: {str(exc).splitlines()[0][:160]}"
+    if message not in STAGE_WARNINGS:
+        STAGE_WARNINGS.append(message)
+    print(f"[degraded] {message}")
+    return message
+
+
+def _classifier_pipeline(task, model_id, **kwargs):
+    """Build a text pipeline, forcing safetensors.
+
+    transformers >= 4.57 refuses torch.load on torch < 2.6 (CVE-2025-32434).
+    Both checkpoints ship safetensors as well as a .bin, but the pipeline
+    helper resolves to the .bin and dies -- and passing
+    model_kwargs={"use_safetensors": True} does not reach the loader.
+    Building the model and tokenizer explicitly does.
+    """
+    from transformers import AutoModelForSequenceClassification, AutoTokenizer
+    model = AutoModelForSequenceClassification.from_pretrained(
+        model_id, use_safetensors=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    return pipeline(task, model=model, tokenizer=tokenizer,
+                    device=pipeline_device(), framework="pt", **kwargs)
 
 
 gpu.register('nlp', unload_nlp_models)
@@ -185,24 +218,18 @@ def load_sentiment_analyzer():
     global SENTIMENT_ANALYZER
     gpu.acquire('nlp')
     if SENTIMENT_ANALYZER is None:
-        SENTIMENT_ANALYZER = pipeline(
+        SENTIMENT_ANALYZER = _classifier_pipeline(
             "sentiment-analysis",
-            model="finiteautomata/bertweet-base-sentiment-analysis",
-            device=pipeline_device(),
-            framework="pt"  # Use PyTorch backend
-        )
+            "finiteautomata/bertweet-base-sentiment-analysis")
     return SENTIMENT_ANALYZER
 
 def load_emotion_detector():
     global EMOTION_DETECTOR
     gpu.acquire('nlp')
     if EMOTION_DETECTOR is None:
-        EMOTION_DETECTOR = pipeline(
+        EMOTION_DETECTOR = _classifier_pipeline(
             "text-classification",
-            model="j-hartmann/emotion-english-distilroberta-base",
-            device=pipeline_device(),
-            framework="pt"  # Use PyTorch backend
-        )
+            "j-hartmann/emotion-english-distilroberta-base")
     return EMOTION_DETECTOR
 
 # Sanitize Unicode for fpdf
@@ -441,8 +468,8 @@ def get_emergency_type(text):
         return final_type
         
     except Exception as e:
-        print(f"Error in emergency classification: {str(e)}")
-        return "unknown"  # Return unknown if any part of the classification fails
+        note_stage_failure("emergency_type", e)
+        return "unknown"
 
 def assess_severity(text, entities):
     """Assess severity from the transcript and the entities already extracted.
@@ -460,14 +487,19 @@ def assess_severity(text, entities):
         result = classifier(text, candidate_labels=["high", "medium", "low"])
         distribution = dict(zip(result["labels"], result["scores"]))
 
+        # Two of the four severity terms come from these models; losing them
+        # quietly means a score computed from half its inputs, with a neutral
+        # default that reads exactly like a genuine neutral result.
         try:
             sentiment = load_sentiment_analyzer()(text[:128])[0]
-        except Exception:
+        except Exception as exc:
             sentiment = {"label": "NEU", "score": 0.5}
+            note_stage_failure("sentiment", exc)
         try:
             emotion = load_emotion_detector()(text[:128])[0]
-        except Exception:
+        except Exception as exc:
             emotion = {"label": "neutral", "score": 0.5}
+            note_stage_failure("emotion", exc)
 
         score, _parts = severity_score(
             distribution, sentiment, emotion, entities,
@@ -475,7 +507,7 @@ def assess_severity(text, entities):
         return severity_label(score)
 
     except Exception as e:
-        print(f"Error in severity assessment: {str(e)}")
+        note_stage_failure("severity", e)
         return "low"
 
 def get_emergency_response(emergency_type):
@@ -510,10 +542,16 @@ def calculate_response_time(emergency_type, priority):
     
     return base_times[priority] * type_multipliers.get(emergency_type, 1.0)
 
-def process_audio_file(input_path, output_folder):
-    """Process audio file and generate analysis"""
+def process_audio_file(input_path, output_folder, progress=None):
+    """Process audio file and generate analysis.
+
+    `progress` receives a short phrase per stage, written for a reader waiting
+    on a page rather than as a stage identifier.
+    """
+    say = progress or (lambda _stage: None)
     try:
         # Load audio file with specific parameters for Whisper
+        say("Loading audio")
         audio, sr = librosa.load(input_path, sr=16000, mono=True)  # Whisper expects 16kHz mono audio
 
         # Trim excessively long audio to bound processing time. The cap is
@@ -535,18 +573,25 @@ def process_audio_file(input_path, output_folder):
         # visualisation, which is why the plots kept fixed shared filenames
         # long after the PDF stopped having one.
         report_id = uuid.uuid4().hex
+        STAGE_WARNINGS.clear()          # per request, not per process
 
         # Condition the audio before recognition. Conservative on purpose --
         # see utils.audio_clean for why aggressive denoising hurts ASR.
+        say("Cleaning audio")
         audio, audio_report = clean_audio(audio, sr)
 
         # Generate visualizations from what was actually transcribed, not from
         # the raw file, so the plots describe the analysed signal.
+        say("Drawing waveform and spectrum")
         plots = generate_visualizations(audio, sr, output_folder, report_id)
 
         # faster-whisper takes the array directly, so the intermediate WAV that
         # every request used to write and delete is gone.
-        asr_result = asr_transcribe(audio)
+        # transcribe_file, not the array-level call: it honours ASR_BACKEND and
+        # the transcript cache. The pipeline called the local function directly,
+        # so ASR_BACKEND was read by nothing that mattered.
+        say("Transcribing the call")
+        asr_result = asr_transcribe_file(input_path, audio=audio, sr=sr)
         transcription = asr_result["text"]
         lang = asr_result["language"]
 
@@ -554,13 +599,16 @@ def process_audio_file(input_path, output_folder):
         translated_text = transcription
         if lang and lang != 'en':
             try:
-                translated_text = asr_transcribe(audio, translate=True)["text"]
+                translated_text = asr_transcribe_file(
+                    input_path, audio=audio, sr=sr, translate=True,
+                    use_cache=False)["text"]
             except Exception:
                 translated_text = transcription
         
         # Named entities first -- severity weights them, so they have to exist
         # before it runs. Previously severity was called with a hardcoded []
         # and the entity term of its score was dead on every request.
+        say("Extracting names, places and numbers")
         ner_model = load_ner_model()
         doc = ner_model(translated_text)
         entities = [{"text": ent.text, "label": ent.label_} for ent in doc.ents]
@@ -568,6 +616,7 @@ def process_audio_file(input_path, output_folder):
             plots.append('entities')
 
         # Get emergency type and severity
+        say("Classifying the emergency")
         emergency_type = get_emergency_type(translated_text)
         severity = assess_severity(translated_text, entities)
         
@@ -578,6 +627,7 @@ def process_audio_file(input_path, output_folder):
         
         # Generate summary
         # Prefer high-quality chunked summarization
+        say("Summarising")
         summary = summarize_text_chunked(translated_text)
         if not is_summary_informative(summary, translated_text):
             # Fallback to T5; if still low-value, leave empty for UI to hide
@@ -632,6 +682,7 @@ def process_audio_file(input_path, output_folder):
             'asr': {k: v for k, v in asr_result.items() if k != 'segments'},
             'asr_segments': asr_result['segments'],
             'audio_report': audio_report,
+            'warnings': list(STAGE_WARNINGS),
             'source_duration_s': round(source_duration, 1),
             'analysed_duration_s': round(analysed_duration, 1),
             'truncated': truncated,
@@ -647,6 +698,7 @@ def process_audio_file(input_path, output_folder):
         # LLM enrichment. Runs after the classical path, never instead of it:
         # the deterministic stages are the floor, and both results are kept so
         # a disagreement between them can be surfaced rather than hidden.
+        say("Reading the call for an incident record")
         llm_record, llm_meta = extract_incident(
             translated_text, truncated=truncated,
             source_seconds=source_duration, analysed_seconds=analysed_duration)
@@ -654,6 +706,7 @@ def process_audio_file(input_path, output_folder):
         data['llm_meta'] = llm_meta
         data['disagreements'] = compare_classifications(data, llm_record)
 
+        say("Writing the report")
         data['fir_pdf'] = generate_fir_pdf(data)
 
         return data
@@ -716,38 +769,68 @@ def compare_classifications(classical, llm_record):
 
     return found
 
+# A plot is at most ~1200px wide, so it cannot show more detail than that many
+# columns however much audio sits behind it. Rendering a ten-minute recording at
+# 16 kHz took 80 seconds -- 36% of the whole request, more than the language
+# model -- nearly all of it in piptrack, which is expensive per frame.
+PLOT_MAX_SECONDS = 180
+PLOT_HOP_LENGTH = 1024
+
+
+def _downsample_for_plot(audio, sr):
+    """Decimate to a rate that still fills the plot, and cap the span drawn."""
+    step = max(1, int(round(sr / 8000))) if sr > 8000 else 1
+    reduced = audio[::step]
+    reduced_sr = sr // step
+    limit = PLOT_MAX_SECONDS * reduced_sr
+    return reduced[:limit], reduced_sr, len(reduced) > limit
+
+
 def generate_visualizations(audio, sr, output_folder, report_id):
     """Generate audio visualizations. Returns the plot kinds written."""
     os.makedirs(output_folder, exist_ok=True)
+    audio, sr, clipped = _downsample_for_plot(audio, sr)
+    suffix = f" (first {PLOT_MAX_SECONDS // 60} minutes)" if clipped else ""
 
-    # Waveform plot
     plt.figure(figsize=(12, 4))
     librosa.display.waveshow(audio, sr=sr)
-    plt.title('Waveform')
+    plt.title("Waveform" + suffix)
     plt.tight_layout()
     plt.savefig(plot_path(output_folder, 'waveform', report_id))
     plt.close()
 
-    # MFCC plot
-    mfccs = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=13)
+    mfccs = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=13,
+                                 hop_length=PLOT_HOP_LENGTH)
     plt.figure(figsize=(12, 4))
-    librosa.display.specshow(mfccs, x_axis='time')
+    librosa.display.specshow(mfccs, x_axis='time', sr=sr,
+                             hop_length=PLOT_HOP_LENGTH)
     plt.colorbar(format='%+2.0f dB')
-    plt.title('MFCC')
+    plt.title("MFCC" + suffix)
     plt.tight_layout()
     plt.savefig(plot_path(output_folder, 'mfcc', report_id))
     plt.close()
 
-    # Pitch plot
-    pitches, magnitudes = librosa.piptrack(y=audio, sr=sr)
+    # piptrack dominated the old cost. A larger hop and a 2 kHz ceiling keep the
+    # speech range -- human pitch tops out well below it -- at a fraction of the
+    # frames. Plotting the contour rather than the raw matrix also makes the
+    # chart readable, which plt.plot(pitches) never was.
+    pitches, magnitudes = librosa.piptrack(y=audio, sr=sr, fmax=2000,
+                                           hop_length=PLOT_HOP_LENGTH)
+    best = magnitudes.argmax(axis=0)
+    contour = pitches[best, np.arange(pitches.shape[1])].astype(float)
+    contour[contour <= 0] = np.nan
+    times = librosa.frames_to_time(np.arange(len(contour)), sr=sr,
+                                   hop_length=PLOT_HOP_LENGTH)
     plt.figure(figsize=(12, 4))
-    plt.plot(pitches)
-    plt.title('Pitch')
+    plt.plot(times, contour, linewidth=0.8)
+    plt.ylabel("Hz"); plt.xlabel("Time (s)")
+    plt.title("Pitch contour" + suffix)
     plt.tight_layout()
     plt.savefig(plot_path(output_folder, 'pitch', report_id))
     plt.close()
 
     return ['waveform', 'mfcc', 'pitch']
+
 
 def generate_fir_pdf(data):
     """Generate advanced PDF report"""

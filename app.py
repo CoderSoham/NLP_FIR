@@ -4,6 +4,7 @@ import re
 import uuid
 from werkzeug.utils import secure_filename
 from utils.audio_utils import process_audio_file, generate_fir_pdf
+from utils import jobs
 from utils.retention import start_background_sweeper
 from utils.ratelimit import RateLimiter, client_key, api_key_ok
 from config import (UPLOAD_FOLDER, PROCESSED_FOLDER, MAX_CONTENT_LENGTH,
@@ -46,40 +47,78 @@ def guard_upload():
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    data = {}
-    if request.method == 'POST':
-        blocked = guard_upload()
-        if blocked is not None:
-            return blocked
-        if 'audio_file' not in request.files:
-            return 'No file part'
+    """Upload form, and the handoff to a background job.
 
-        file = request.files['audio_file']
-        if file.filename == '':
-            return 'No selected file'
+    The pipeline takes tens of seconds, so the request no longer waits for it.
+    A POST starts a job and renders a progress page; the browser polls
+    /api/jobs/<id> and loads /result/<id> when it finishes. That turns a blank
+    wait into something that says which stage is running, and it means a proxy
+    with a sane timeout no longer kills the request.
+    """
+    if request.method != 'POST':
+        return render_template('index.html')
 
-        if file:
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-            os.makedirs(PROCESSED_FOLDER, exist_ok=True)
+    blocked = guard_upload()
+    if blocked is not None:
+        return blocked
 
-            filename = secure_filename(file.filename)
-            ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
-            if ext not in ALLOWED_EXTENSIONS:
-                abort(400, description='Unsupported file type')
+    filepath, error = _save_upload()
+    if error:
+        abort(400, description=error)
 
-            # Generate UUID-based filename to avoid collisions
-            unique_name = f"{uuid.uuid4().hex}.{ext}"
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_name)
-            file.save(filepath)
+    job_id = jobs.submit(process_audio_file, filepath, PROCESSED_FOLDER)
+    return render_template('progress.html', job_id=job_id,
+                           audio_url=url_for('serve_audio',
+                                             filename=os.path.basename(filepath)))
 
-            # Process audio and generate plots & PDF
-            data = process_audio_file(filepath, PROCESSED_FOLDER)
 
-            # Pass filename to template for audio playback
-            data['audio_filename'] = unique_name
-            data['audio_url'] = url_for('serve_audio', filename=unique_name)
+def _save_upload():
+    """Validate and store an upload. Returns (path, error)."""
+    if 'audio_file' not in request.files:
+        return None, 'No file part'
+    file = request.files['audio_file']
+    if file.filename == '':
+        return None, 'No selected file'
+    filename = secure_filename(file.filename)
+    ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+    if ext not in ALLOWED_EXTENSIONS:
+        return None, 'Unsupported file type'
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    os.makedirs(PROCESSED_FOLDER, exist_ok=True)
+    unique_name = f"{uuid.uuid4().hex}.{ext}"
+    path = os.path.join(app.config['UPLOAD_FOLDER'], unique_name)
+    file.save(path)
+    return path, None
 
+
+@app.route('/api/jobs/<job_id>')
+def job_status(job_id):
+    if not re.fullmatch(r'[0-9a-f]{32}', job_id):
+        abort(404)
+    state = jobs.status(job_id)
+    if state is None:
+        abort(404)
+    return jsonify(state)
+
+
+@app.route('/result/<job_id>')
+def result(job_id):
+    if not re.fullmatch(r'[0-9a-f]{32}', job_id):
+        abort(404)
+    job = jobs.get(job_id)
+    if job is None:
+        abort(404)
+    if job['status'] == 'failed':
+        return render_template('progress.html', job_id=job_id,
+                               failed=job['error']), 500
+    if job['status'] != 'done':
+        return render_template('progress.html', job_id=job_id)
+    data = dict(job['result'])
+    data['audio_url'] = url_for('serve_audio', filename=data['audio_filename']) \
+        if data.get('audio_filename') else None
+    data['job'] = jobs.status(job_id)
     return render_template('index.html', **data)
+
 
 @app.route('/healthz', methods=['GET'])
 def healthz():

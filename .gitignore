@@ -60,6 +60,9 @@ plots/
 # Machine-specific cache redirection (paths differ per machine).
 .venvrc
 
+# Editor/agent launch config, machine-specific paths
+.claude/
+
 # Temp files
 *.tmp
 *.temp

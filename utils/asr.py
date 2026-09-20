@@ -198,7 +198,8 @@ def _run(model, audio, language, translate, initial_prompt, beam_size):
     }
 
 
-def transcribe_file(audio_path, use_cache=True, backend=None, **kwargs):
+def transcribe_file(audio_path, use_cache=True, backend=None, audio=None,
+                    sr=16000, **kwargs):
     """Transcribe a file, reusing a cached transcript where one exists.
 
     This is the entry point the pipeline should use. `transcribe()` remains the
@@ -224,12 +225,13 @@ def transcribe_file(audio_path, use_cache=True, backend=None, **kwargs):
     if backend == "groq":
         result = transcribe_groq(audio_path, model=model, **kwargs)
     else:
-        import librosa
-        from utils.audio_clean import clean_audio
-        audio, sr = librosa.load(audio_path, sr=16000, mono=True)
-        # Same conditioning the pipeline applies, so a cached transcript and a
-        # pipeline transcript of the same file are the same thing.
-        audio, _report = clean_audio(audio, sr)
+        if audio is None:
+            import librosa
+            from utils.audio_clean import clean_audio
+            audio, sr = librosa.load(audio_path, sr=16000, mono=True)
+            # Same conditioning the pipeline applies, so a cached transcript
+            # and a pipeline transcript of the same file are the same thing.
+            audio, _report = clean_audio(audio, sr)
         result = transcribe(audio, **kwargs)
 
     result["cached"] = False

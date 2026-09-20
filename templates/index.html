@@ -48,6 +48,14 @@
     </div>
     {% endif %}
 
+    {% if warnings %}
+    <div class="notice warn section">
+      <strong>Some stages did not run.</strong> The result below is incomplete,
+      and these are the reasons:
+      <ul>{% for w in warnings %}<li><code>{{ w }}</code></li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+
     {% set L = llm or {} %}
     <div class="triage severity-{{ severity }}">
       <div class="triage-main">

@@ -88,5 +88,50 @@
     "location_stated": true,
     "location_contains": "Winter Garden",
     "is_emergency_call": true
+  },
+  "call_56.mp3": {
+    "note": "11-month-old baby missing from her crib. Caller gives 1160 Ray Road then corrects toward 1680 - the transcript itself is inconsistent, so any single number is unsafe to require.",
+    "incident_type": "police",
+    "severity_max": "critical",
+    "weapon_present": false,
+    "location_stated": true,
+    "location_contains": "Ray Road",
+    "is_emergency_call": true
+  },
+  "call_219.mp3": {
+    "note": "Witnesses report a light aircraft down in a field at the corner of 119 and County Road 1. Heard an impact, no smoke or flames visible yet.",
+    "incident_type": "accident",
+    "severity_max": "critical",
+    "weapon_present": false,
+    "location_stated": true,
+    "location_contains": "County Road",
+    "is_emergency_call": true
+  },
+  "call_696.mp3": {
+    "note": "Shots fired outside a club near a pool hall and laundromat; caller is hiding and does not know if anyone is hit. Matched on 'pool' by keyword but is a shooting, not a drowning.",
+    "incident_type": "police",
+    "severity_max": "critical",
+    "weapon_present": true,
+    "location_stated": true,
+    "location_contains": "Dennis",
+    "is_emergency_call": true
+  },
+  "call_225.mp3": {
+    "note": "Murder-suicide. Ex-boyfriend broke in, killed the caller's current boyfriend, held her hostage and shot himself. Caller is 17 and was beaten. Preceded by an archival recording preamble.",
+    "incident_type": "police",
+    "severity_max": "critical",
+    "weapon_present": true,
+    "location_stated": false,
+    "location_contains": null,
+    "is_emergency_call": true
+  },
+  "call_144.mp3": {
+    "note": "Friend having a seizure after taking an unknown pill; a second person affected the same way. Caller explicitly does not know the address - a negative case for location extraction.",
+    "incident_type": "medical",
+    "severity_max": "critical",
+    "weapon_present": false,
+    "location_stated": false,
+    "location_contains": null,
+    "is_emergency_call": true
   }
 }
