@@ -189,6 +189,48 @@ class AnthropicBackend:
         return _coerce(text)
 
 
+BYTES_PER_PARAM = 2          # bfloat16
+# Weights are not the whole footprint: activations, the KV cache and the
+# tokeniser all want room, and the machine has to keep running.
+HEADROOM_FACTOR = 1.35
+
+
+def _params_from_name(model_id):
+    """Parameter count implied by a model id, in billions, or None.
+
+    Reading config.json from the Hub would be exact, but that is a network call
+    on the path of a stage whose whole job is to fail fast when it cannot run.
+    Every instruct model names its size, so the name is enough.
+    """
+    match = re.search(r"(\d+(?:\.\d+)?)\s*[bB](?![a-zA-Z0-9])", model_id)
+    return float(match.group(1)) if match else None
+
+
+def check_cpu_headroom(model_id):
+    """Refuse a CPU load that will swap instead of failing.
+
+    An out-of-memory condition on CPU does not raise. It degrades into
+    thrashing: all cores pinned, swap at 40k blocks/sec, no output, and on a
+    laptop the fans at full tilt. That happened for nearly nine minutes before
+    anyone thought to check RSS, and the only signal was noise.
+
+    A model that cannot fit should say so in a second.
+    """
+    billions = _params_from_name(model_id)
+    if billions is None:
+        return
+    needed = billions * 1e9 * BYTES_PER_PARAM * HEADROOM_FACTOR
+    try:
+        available = os.sysconf("SC_AVPHYS_PAGES") * os.sysconf("SC_PAGE_SIZE")
+    except (ValueError, OSError, AttributeError):
+        return                       # not POSIX; let the load try
+    if available < needed:
+        raise LLMUnavailable(
+            f"{model_id} needs about {needed / 1e9:.1f} GB at bfloat16 and "
+            f"{available / 1e9:.1f} GB is free; it would swap rather than "
+            f"fail. Use a smaller LOCAL_LLM_MODEL or a hosted backend.")
+
+
 class LocalBackend:
     """An instruct model on this machine, via transformers.
 
@@ -233,14 +275,20 @@ class LocalBackend:
             return
         if self.device == "cuda":
             gpu.acquire("llm")
+        else:
+            check_cpu_headroom(self.model_id)
         try:
             if self.tokenizer is None:
                 self.tokenizer = self._AutoTokenizer.from_pretrained(
                     self.model_id, trust_remote_code=False)
             self.model = self._AutoModel.from_pretrained(
                 self.model_id,
-                torch_dtype=(self._torch.float16 if self.device == "cuda"
-                             else self._torch.float32),
+                # bfloat16 on CPU, not float32. Four bytes per parameter puts a
+                # 3B model at 12.4 GB, which on a 16 GB machine does not raise
+                # -- it swaps, and the run appears to be working while making
+                # no progress. Observed for 8m39s with zero output.
+                dtype=(self._torch.float16 if self.device == "cuda"
+                       else self._torch.bfloat16),
                 device_map=self.device,
                 trust_remote_code=False,
             )

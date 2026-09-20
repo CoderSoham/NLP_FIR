@@ -415,3 +415,64 @@ def test_local_backend_is_not_hosted():
     """The pipeline overlaps the LLM with GPU stages only when it is hosted."""
     assert llm.LocalBackend.is_hosted is False
     assert llm.AnthropicBackend.is_hosted is True
+
+
+# ---- CPU headroom guard -----------------------------------------------------
+# An out-of-memory condition on CPU does not raise, it swaps. A 3B model at
+# float32 ran for nearly nine minutes producing nothing, and the only symptom
+# was laptop fan noise. See ISSUE-037.
+
+@pytest.mark.parametrize("model_id,expected", [
+    ("Qwen/Qwen2.5-1.5B-Instruct", 1.5),
+    ("Qwen/Qwen2.5-3B-Instruct", 3.0),
+    ("meta-llama/Llama-3.1-8B-Instruct", 8.0),
+    ("nvidia/nemotron-3-ultra-550b-a55b", 550.0),
+    ("google/flan-t5-base", None),
+    ("some/model-without-a-size", None),
+])
+def test_parameter_count_is_read_from_the_name(model_id, expected):
+    assert llm._params_from_name(model_id) == expected
+
+
+def test_a_model_that_fits_is_allowed(monkeypatch):
+    monkeypatch.setattr(llm.os, "sysconf",
+                        lambda n: 10 ** 9 if n == "SC_AVPHYS_PAGES" else 16)
+    llm.check_cpu_headroom("Qwen/Qwen2.5-1.5B-Instruct")     # must not raise
+
+
+def test_a_model_that_would_swap_is_refused(monkeypatch):
+    # 2 GB free against a 7B model needing ~19 GB.
+    monkeypatch.setattr(llm.os, "sysconf",
+                        lambda n: 2 * 10 ** 9 if n == "SC_AVPHYS_PAGES" else 1)
+    with pytest.raises(LLMUnavailable, match="would swap"):
+        llm.check_cpu_headroom("Qwen/Qwen2.5-7B-Instruct")
+
+
+def test_an_unsized_model_is_not_blocked(monkeypatch):
+    """Better to attempt a load than to refuse on a name we cannot parse."""
+    monkeypatch.setattr(llm.os, "sysconf", lambda n: 1)
+    llm.check_cpu_headroom("google/flan-t5-base")            # must not raise
+
+
+def test_a_platform_without_sysconf_is_not_blocked(monkeypatch):
+    def unsupported(_name):
+        raise ValueError("unrecognised configuration name")
+
+    monkeypatch.setattr(llm.os, "sysconf", unsupported)
+    llm.check_cpu_headroom("Qwen/Qwen2.5-7B-Instruct")       # must not raise
+
+
+def test_the_cpu_path_does_not_load_at_float32():
+    """Regression: float32 put a 3B model at 12.4 GB on a 16 GB machine.
+
+    Reads the code because the alternative is loading a model. The fix was
+    designed, written into the vault, and then never applied -- it ran for ten
+    more days and was found by the fans getting loud.
+    """
+    import inspect
+
+    source = inspect.getsource(llm.LocalBackend._ensure_loaded)
+    code = [ln for ln in source.splitlines()
+            if not ln.lstrip().startswith("#")]
+    assert any("bfloat16" in ln for ln in code)
+    assert not any("float32" in ln for ln in code)
