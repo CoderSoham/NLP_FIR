@@ -30,7 +30,7 @@ TRANSLITERATE = {
     "‘": "'", "’": "'", "‚": ",", "‛": "'",
     "“": '"', "”": '"', "„": '"',
     "–": "-", "—": "-", "−": "-",
-    "…": "...", "•": "-", " ": " ",
+    "…": "...", "•": "·", " ": " ",
     "′": "'", "″": '"', "€": "EUR", "₹": "Rs.",
 }
 
@@ -39,6 +39,8 @@ TRANSLITERATE = {
 # pushed "Priority:", the second weapon and every bullet after the first off
 # into the right margin. Flowing text always returns to the left margin.
 FLOW = {"new_x": XPos.LMARGIN, "new_y": YPos.NEXT}
+
+BULLET = "\u00b7"          # middle dot: in Latin-1, unlike U+2022
 
 PAGE_WIDTH = 210
 MARGIN = 15
@@ -124,7 +126,9 @@ class FIRReport(FPDF):
     # ---- building blocks ---------------------------------------------------
 
     def heading(self, text):
-        if self.get_y() > 250:          # do not orphan a heading
+        # A heading needs room for a couple of rows under it, or it reads as
+        # an empty section and the content looks like it belongs to the next.
+        if self.get_y() > 238:
             self.add_page()
         self.ln(3)
         self.set_font("Helvetica", "B", 12)
@@ -165,7 +169,7 @@ class FIRReport(FPDF):
                 self.add_page()
                 self.set_font("Helvetica", "", size)
             y = self.get_y()
-            self.cell(5, 5, "-")
+            self.cell(5, 5, BULLET)
             self.set_xy(MARGIN + 5, y)
             self.multi_cell(CONTENT_WIDTH - 5, 5, sanitize(as_text(item)),
                             **FLOW)
@@ -185,6 +189,15 @@ class FIRReport(FPDF):
             self.multi_cell(CONTENT_WIDTH, 5, sanitize(f"  {line}"),
                             fill=True, **FLOW)
         self.ln(3)
+
+
+def _mmss(seconds):
+    """Durations as mm:ss. "9:50" is a length; "590.1s" is a measurement."""
+    try:
+        seconds = int(round(float(seconds)))
+    except (TypeError, ValueError):
+        return "unknown duration"
+    return f"{seconds // 60}:{seconds % 60:02d}"
 
 
 def _triage_band(pdf, data, record):
@@ -212,6 +225,20 @@ def _triage_band(pdf, data, record):
         f"   |   Protocol target: "
         f"{response.get('estimated_response_time', '-')} minutes"), fill=True, **FLOW)
 
+    # What recording this is, and how much of it was heard. Without this the
+    # only identifying mark on the document was a truncated hex id in the page
+    # header, and a partial analysis was disclosed nowhere near the verdict.
+    duration = data.get("analysed_duration_s")
+    source = data.get("source_duration_s")
+    heard = f"{_mmss(duration)} analysed"
+    if data.get("truncated") and source:
+        heard += f" of a {_mmss(source)} recording"
+    language = (data.get("language") or "").upper()
+    pdf.multi_cell(CONTENT_WIDTH, 6, sanitize(
+        f"  Call: {heard}"
+        + (f"   |   Language: {language}" if language else "")
+        + f"   |   Report {data.get('report_id', '')[:12]}"), fill=True, **FLOW)
+
     dispatch = data.get("dispatch") or {}
     if dispatch.get("basis") == "location_match":
         eta = dispatch.get("eta_min")
@@ -238,10 +265,15 @@ def _weapons(pdf, record):
             lines.append(f"{item}" + (f'  -  "{quote}"' if quote else ""))
         else:
             lines.append(str(weapon))
-    lines.append("")
-    lines.append("Each entry is quoted from the transcript. Claims the model "
-                 "could not quote were dropped.")
-    pdf.callout("WEAPON MENTIONED IN THE CALL", lines)
+    heading = ("WEAPON MENTIONED IN THE CALL" if len(lines) == 1
+               else "WEAPONS MENTIONED IN THE CALL")
+    pdf.callout(heading, lines)
+    caveat = ("Each entry is quoted from the transcript; a claim the model "
+              "could not quote was dropped.")
+    rejected = (record.get("_rejected") or {}).get("weapons")
+    if rejected:
+        caveat += " Dropped here: " + ", ".join(str(r) for r in rejected) + "."
+    pdf.note(caveat)
 
 
 def _reliability(pdf, data):
@@ -290,12 +322,6 @@ def _incident_record(pdf, record, meta):
         pdf.ln(1)
         pdf.bullets([str(u) for u in uncertainties], size=9.5)
 
-    rejected = (record.get("_rejected") or {}).get("weapons")
-    if rejected:
-        pdf.ln(2)
-        pdf.note("Dropped before printing, because the model could not quote "
-                 "them from the transcript: "
-                 + ", ".join(str(r) for r in rejected))
 
 
 def _actions(pdf, data):
@@ -417,8 +443,8 @@ def _provenance(pdf, data):
                   f"not produced - {meta.get('reason', 'unavailable')}",
                   label_width=46)
     pdf.field("Audio analysed",
-              f"{data.get('analysed_duration_s', '?')}s"
-              + (f" of {data.get('source_duration_s')}s"
+              _mmss(data.get("analysed_duration_s"))
+              + (f" of {_mmss(data.get('source_duration_s'))}"
                  if data.get("truncated") else ""), label_width=46)
     sentiment = data.get("sentiment") or {}
     emotion = data.get("emotion") or {}

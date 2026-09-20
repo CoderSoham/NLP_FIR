@@ -402,3 +402,30 @@ code {
   .provenance-grid { grid-template-columns: 1fr; gap: 2px 0; }
   .provenance-grid dd { margin-bottom: 10px; }
 }
+
+/* Signal diagnostics. Four full-width charts above the fold pushed the report
+   itself off the screen, and they describe the audio rather than the incident,
+   so they are collapsed until someone wants them. */
+
+.charts > summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1.1rem;
+  list-style: revert;
+}
+
+.chart-intro { margin: 12px 0 4px; }
+
+.chart { margin: 20px 0 0; }
+.chart figcaption { color: var(--muted); font-size: 0.87rem; margin-top: 6px; }
+.chart figcaption strong { color: var(--text); margin-right: 4px; }
+
+.charts .plot {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  /* The charts are drawn on a white matplotlib canvas, so in dark mode they
+     need their own ground rather than bleeding into the page. */
+  background: #ffffff;
+}

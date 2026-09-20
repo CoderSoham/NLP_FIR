@@ -191,3 +191,40 @@ def test_a_transcript_full_of_unicode_renders(tmp_path):
     data = dict(MINIMAL, asr_segments=[],
                 transcription="“don’t” — café \U0001f6a8 你好")
     assert render(data, tmp_path).startswith(b"%PDF")
+
+
+# ---- small formatting decisions the document depends on ---------------------
+
+@pytest.mark.parametrize("seconds,expected", [
+    (590.1, "9:50"), (0, "0:00"), (59.4, "0:59"), (60, "1:00"),
+    (3600, "60:00"), ("120", "2:00"),
+])
+def test_durations_read_as_lengths_not_measurements(seconds, expected):
+    assert fir_pdf._mmss(seconds) == expected
+
+
+@pytest.mark.parametrize("value", [None, "", "not a number", object()])
+def test_an_unusable_duration_does_not_crash_the_report(value):
+    assert fir_pdf._mmss(value) == "unknown duration"
+
+
+@pytest.mark.parametrize("value,expected", [
+    (["a", "b"], "a; b"),
+    (["only"], "only"),
+    ([], ""),
+    (None, ""),
+    ({"left arm": "grazed"}, "left arm: grazed"),
+    ("plain", "plain"),
+    (7, "7"),
+    ([None, "kept", ""], "kept"),
+])
+def test_list_valued_fields_read_as_prose_not_python(value, expected):
+    """Regression: 'Injuries' printed ['officer shot through the right arm']."""
+    assert fir_pdf.as_text(value) == expected
+
+
+def test_the_bullet_survives_sanitising():
+    """U+2022 is not in Latin-1, so it used to be deleted entirely, leaving a
+    hanging indent with no marker."""
+    assert sanitize(fir_pdf.BULLET) == fir_pdf.BULLET
+    assert sanitize("• item") == "· item"

@@ -140,3 +140,28 @@ def test_a_second_upload_from_a_result_page_works(pipeline):
     assert first.status_code == 200
     second = upload(pipeline.client)
     assert second.status_code == 200
+
+
+def test_the_charts_are_collapsed_by_default(pipeline):
+    """They describe the audio, not the incident. The report comes first."""
+    from conftest import upload
+
+    html = upload(pipeline.client).get_data(as_text=True)
+    assert '<details class="section charts"' in html
+    assert 'class="section charts" id="charts" open' not in html
+
+
+def test_a_run_with_no_charts_renders_no_chart_section(pipeline):
+    from conftest import upload
+
+    pipeline.plots = []
+    html = upload(pipeline.client).get_data(as_text=True)
+    assert 'class="section charts"' not in html
+
+
+def test_every_chart_carries_a_caption(pipeline):
+    """A chart nobody can interpret is decoration."""
+    from conftest import upload
+
+    html = upload(pipeline.client).get_data(as_text=True)
+    assert html.count("<figcaption>") == len(pipeline.plots)

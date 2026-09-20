@@ -191,15 +191,31 @@
       </p>
     </div>
 
-    {% set plot_titles = {'waveform': '📊 Waveform', 'mfcc': '🎵 MFCC',
-                          'pitch': '🎼 Pitch',
-                          'entities': '📈 Entities Distribution'} %}
-    {% for kind in plots %}
-    <div class="section">
-      <h2>{{ plot_titles.get(kind, kind) }}</h2>
-      <img src="{{ url_for('serve_plot', report_id=report_id, kind=kind) }}" class="plot">
-    </div>
-    {% endfor %}
+    {% set plot_titles = {
+      'waveform': ['Waveform', 'Amplitude over time. Flat stretches are silence; clipping shows as a flat top.'],
+      'mfcc': ['MFCC 1-12', 'Cepstral coefficients, the features a classical speech model consumes. Unitless.'],
+      'pitch': ['Pitch', 'Fundamental frequency of voiced frames, 65-400 Hz. Gaps are unvoiced or silent.'],
+      'entities': ['Entity types', 'How many of each entity label spaCy found in the transcript.']} %}
+    {% if plots %}
+    <!-- Collapsed by default. These describe the audio signal, not the
+         incident -- they are for someone debugging a bad transcription, and
+         putting four charts above the fold pushed the actual report down. -->
+    <details class="section charts" id="charts">
+      <summary>Signal diagnostics <span class="muted">— {{ plots|length }} charts</span></summary>
+      <p class="muted chart-intro">
+        These describe the recording, not the emergency. Useful when a
+        transcript looks wrong and you want to see whether the audio is.
+      </p>
+      {% for kind in plots %}
+      {% set meta = plot_titles.get(kind, [kind, '']) %}
+      <figure class="chart">
+        <img src="{{ url_for('serve_plot', report_id=report_id, kind=kind) }}"
+             class="plot" loading="lazy" alt="{{ meta[0] }}">
+        <figcaption><strong>{{ meta[0] }}</strong> {{ meta[1] }}</figcaption>
+      </figure>
+      {% endfor %}
+    </details>
+    {% endif %}
 
     <!-- The route already put the job's stage timings on the context and
          nothing rendered them. They answer the two questions a reader of a
@@ -281,6 +297,19 @@
 
     prefersDark.addEventListener('change', label);
     label();
+
+    // Whether the diagnostics are open is a per-reader preference, not a
+    // per-report one. Wrapped because storage throws in a private window.
+    const charts = document.getElementById('charts');
+    if (charts) {
+      try {
+        charts.open = localStorage.getItem('charts-open') === '1';
+        charts.addEventListener('toggle', () => {
+          try { localStorage.setItem('charts-open', charts.open ? '1' : '0'); }
+          catch (err) { /* storage unavailable; the toggle still works */ }
+        });
+      } catch (err) { /* leave it closed */ }
+    }
   </script>
 </body>
 </html>

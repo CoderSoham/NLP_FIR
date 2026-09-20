@@ -805,61 +805,130 @@ def compare_classifications(classical, llm_record):
 # model -- nearly all of it in piptrack, which is expensive per frame.
 PLOT_MAX_SECONDS = 180
 PLOT_HOP_LENGTH = 1024
+# A plot is about 1200 pixels wide and cannot show more columns than that, so
+# there is nothing to gain from drawing at 16 kHz.
+PLOT_SAMPLE_RATE = 8000
+# The human speech fundamental. Male voices bottom out near 85 Hz, and nobody
+# speaks above about 400 -- anything outside this is an octave error or noise.
+PITCH_FMIN = 65.0
+PITCH_FMAX = 400.0
+# Voiced-frame gate, as a fraction of this recording's upper-quartile RMS. A
+# fixed threshold would depend on the recording's gain.
+VOICED_RMS_FRACTION = 0.35
 
 
 def _downsample_for_plot(audio, sr):
-    """Decimate to a rate that still fills the plot, and cap the span drawn."""
-    step = max(1, int(round(sr / 8000))) if sr > 8000 else 1
-    reduced = audio[::step]
-    reduced_sr = sr // step
-    limit = PLOT_MAX_SECONDS * reduced_sr
-    return reduced[:limit], reduced_sr, len(reduced) > limit
+    """Resample to a rate that still fills the plot, and cap the span drawn.
+
+    `librosa.resample`, not `audio[::step]`. Naive decimation applies no
+    anti-alias filter, so every component above the new Nyquist folded back
+    into the band -- the MFCC and the pitch chart were both drawn from a
+    signal containing energy that is not in the recording.
+    """
+    target_sr = min(sr, PLOT_SAMPLE_RATE)
+    if target_sr < sr:
+        audio = librosa.resample(audio, orig_sr=sr, target_sr=target_sr,
+                                 res_type="polyphase")
+    limit = PLOT_MAX_SECONDS * target_sr
+    return audio[:limit], target_sr, len(audio) > limit
 
 
 def generate_visualizations(audio, sr, output_folder, report_id):
-    """Generate audio visualizations. Returns the plot kinds written."""
+    """Signal diagnostics. Returns the plot kinds written.
+
+    These describe the *audio*, not the incident -- they are diagnostics for
+    someone debugging a bad transcription, which is why the result page keeps
+    them collapsed. That does not excuse them from being correct: the pitch
+    chart used to plot the strongest spectral peak up to 2 kHz and label it
+    pitch, when speech fundamentals live below 400 Hz, and the MFCC colourbar
+    was labelled in decibels, which cepstral coefficients are not.
+    """
     os.makedirs(output_folder, exist_ok=True)
     audio, sr, clipped = _downsample_for_plot(audio, sr)
     suffix = f" (first {PLOT_MAX_SECONDS // 60} minutes)" if clipped else ""
 
-    plt.figure(figsize=(12, 4))
+    plt.figure(figsize=(12, 3.2))
     librosa.display.waveshow(audio, sr=sr)
     plt.title("Waveform" + suffix)
+    plt.xlabel("Time (s)"); plt.ylabel("Amplitude")
     plt.tight_layout()
     plt.savefig(plot_path(output_folder, 'waveform', report_id))
     plt.close()
 
     mfccs = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=13,
                                  hop_length=PLOT_HOP_LENGTH)
-    plt.figure(figsize=(12, 4))
-    librosa.display.specshow(mfccs, x_axis='time', sr=sr,
-                             hop_length=PLOT_HOP_LENGTH)
-    plt.colorbar(format='%+2.0f dB')
-    plt.title("MFCC" + suffix)
+    # Coefficient 0 is overall energy and is an order of magnitude larger than
+    # the rest, so including it in the colour scale flattened every other row
+    # into one indistinguishable band -- which is exactly how this chart used
+    # to look. The timbre information is in 1..12.
+    detail = mfccs[1:]
+    span = float(np.percentile(np.abs(detail), 99)) or 1.0
+    plt.figure(figsize=(12, 3.2))
+    librosa.display.specshow(detail, x_axis='time', sr=sr,
+                             hop_length=PLOT_HOP_LENGTH,
+                             vmin=-span, vmax=span, cmap='coolwarm')
+    # No unit. MFCCs are unitless cepstral coefficients; the old colourbar
+    # said "dB", which was simply false.
+    plt.colorbar(label="coefficient value")
+    plt.yticks(np.arange(detail.shape[0]), np.arange(1, detail.shape[0] + 1))
+    plt.ylabel("MFCC coefficient")
+    plt.title("MFCC 1-12" + suffix)
     plt.tight_layout()
     plt.savefig(plot_path(output_folder, 'mfcc', report_id))
     plt.close()
 
-    # piptrack dominated the old cost. A larger hop and a 2 kHz ceiling keep the
-    # speech range -- human pitch tops out well below it -- at a fraction of the
-    # frames. Plotting the contour rather than the raw matrix also makes the
-    # chart readable, which plt.plot(pitches) never was.
-    pitches, magnitudes = librosa.piptrack(y=audio, sr=sr, fmax=2000,
-                                           hop_length=PLOT_HOP_LENGTH)
-    best = magnitudes.argmax(axis=0)
-    contour = pitches[best, np.arange(pitches.shape[1])].astype(float)
-    contour[contour <= 0] = np.nan
-    times = librosa.frames_to_time(np.arange(len(contour)), sr=sr,
-                                   hop_length=PLOT_HOP_LENGTH)
-    plt.figure(figsize=(12, 4))
-    plt.plot(times, contour, linewidth=0.8)
-    plt.ylabel("Hz"); plt.xlabel("Time (s)")
-    plt.title("Pitch contour" + suffix)
+    plt.figure(figsize=(12, 3.2))
+    times, contour = _pitch_contour(audio, sr)
+    if contour is not None:
+        plt.plot(times, contour, linewidth=0.9)
+        plt.ylim(PITCH_FMIN, PITCH_FMAX)
+    else:
+        plt.text(0.5, 0.5, "No voiced speech detected",
+                 ha="center", va="center", transform=plt.gca().transAxes)
+    plt.ylabel("Fundamental frequency (Hz)"); plt.xlabel("Time (s)")
+    plt.title("Pitch, voiced frames only" + suffix)
     plt.tight_layout()
     plt.savefig(plot_path(output_folder, 'pitch', report_id))
     plt.close()
 
     return ['waveform', 'mfcc', 'pitch']
+
+
+def _pitch_contour(audio, sr):
+    """Fundamental frequency over time, or (times, None) if nothing is voiced.
+
+    `yin` bounded to the human speech range, not `piptrack`. piptrack's argmax
+    over magnitude returns the strongest spectral peak, which for speech is
+    usually a formant or a harmonic rather than F0 -- with fmax=2000 the old
+    chart plotted values up to 1850 Hz and called them pitch. No adult speaks
+    above about 400 Hz.
+
+    Unvoiced frames are dropped rather than drawn. yin returns an estimate for
+    every frame including silence, so without a gate the chart showed a busy
+    contour during passages where nobody was talking.
+    """
+    frame_length = 1024
+    try:
+        f0 = librosa.yin(audio, fmin=PITCH_FMIN, fmax=PITCH_FMAX, sr=sr,
+                         frame_length=frame_length, hop_length=PLOT_HOP_LENGTH)
+    except Exception as exc:
+        note_stage_failure("pitch", exc)
+        return np.array([]), None
+
+    rms = librosa.feature.rms(y=audio, frame_length=frame_length,
+                              hop_length=PLOT_HOP_LENGTH)[0][:len(f0)]
+    f0 = f0[:len(rms)]
+    # A fixed threshold would depend on the recording's gain, so the gate is
+    # relative to the loud parts of this recording.
+    gate = float(np.percentile(rms, 75)) * VOICED_RMS_FRACTION
+    voiced = (rms > gate) & (f0 > PITCH_FMIN) & (f0 < PITCH_FMAX)
+    if not voiced.any():
+        return np.array([]), None
+
+    contour = np.where(voiced, f0, np.nan)
+    times = librosa.frames_to_time(np.arange(len(contour)), sr=sr,
+                                   hop_length=PLOT_HOP_LENGTH)
+    return times, contour
 
 
 def generate_fir_pdf(data):
