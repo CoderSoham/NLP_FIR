@@ -238,11 +238,34 @@
         <dd>
           {% if llm_meta.status == 'ok' %}
             {{ llm_meta.model }}
-            {% if llm_meta.concurrent %}<span class="muted">· run alongside the local stages</span>{% endif %}
+            {% if llm_meta.seconds %}<span class="muted">· {{ llm_meta.seconds }}s</span>{% endif %}
           {% else %}
             <span class="muted">not produced — {{ llm_meta.reason }}</span>
           {% endif %}
         </dd>
+        {% endif %}
+
+        {# Which path classified this call. Saying so matters: without the
+           local classifiers there is no independent second opinion, and the
+           disagreement banner cannot fire on type or severity. #}
+        {% if llm_meta and llm_meta.second_opinion is defined %}
+        <dt>Classified by</dt>
+        <dd>
+          {% if llm_meta.second_opinion %}
+            Both paths — the local classifiers ran as a second opinion, and
+            any disagreement is shown above.
+          {% else %}
+            The extraction model alone. The local classifiers were skipped,
+            so there is no independent check on type or severity.
+            <span class="muted">Set <code>LOCAL_ANALYSIS=always</code> to run them.</span>
+          {% endif %}
+        </dd>
+        {% endif %}
+
+        {% if summarised_by %}
+        <dt>Summarised by</dt>
+        <dd>{{ 'the extraction model' if summarised_by == 'model'
+               else 'BART, locally' }}</dd>
         {% endif %}
         {% if llm_meta and llm_meta.failed_over_from %}
         <dt>Failed over</dt>

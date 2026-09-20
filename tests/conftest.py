@@ -28,6 +28,7 @@ class FakePipeline:
         self.report_id = uuid.uuid4().hex
         self.stages = []
         self.plots = ["waveform", "mfcc", "pitch", "entities"]
+        self.llm_meta = None
         self.output_folder = None
 
     def process_audio_file(self, input_path, output_folder, progress=None):
@@ -60,6 +61,9 @@ class FakePipeline:
             "best_match": "there is a fire",
             "score": 0.91,
             "entities": [{"text": "Alameda", "label": "LOC"}],
+            "llm_meta": self.llm_meta,
+            "summarised_by": "bart",
+            "second_opinion": True,
         }
 
 

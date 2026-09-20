@@ -141,6 +141,18 @@ the provider that answered.
 > reason, and `ollama` runs a quantised model on hardware `transformers` cannot
 > use.
 
+### The local classifiers
+
+When the extraction model returns a usable record, the BART classifier and
+summariser are skipped — they would spend a minute producing a second answer to
+a question already answered. They still run with no key, on a failed call, or
+on an empty record.
+
+`LOCAL_ANALYSIS=always` runs them anyway and shows where the two paths
+disagree. That is the only way to get an independent check on incident type and
+severity, and it costs roughly seventy seconds on a ten-minute call. The result
+page says which path classified the call either way.
+
 ## Running it locally instead
 
 No keys needed. `LLM_BACKEND=local` and `ASR_BACKEND=local` are the defaults.
@@ -205,6 +217,7 @@ Every setting is an environment variable, read in `config.py`.
 | `GROQ_API_KEY` | unset | Enables `ASR_BACKEND=groq` and `LLM_BACKEND=groq` |
 | `LLM_MODEL` | by provider | Override the provider's default model |
 | `LLM_FALLBACK_BACKENDS` | keys present | Providers to try if the first is rate limited |
+| `LOCAL_ANALYSIS` | `auto` | `always` to run the local classifiers too, `never` to skip them |
 | `TRANSCRIPT_CACHE` | `storage/transcripts` | Cached transcripts, keyed by audio hash |
 | `LOCAL_LLM_MODEL` | by hardware | Any instruct model on the Hub |
 | `LOCAL_LLM_DEVICE` | by hardware | `cuda` or `cpu` |

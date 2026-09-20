@@ -467,16 +467,24 @@ def _provenance(pdf, data):
               _mmss(data.get("analysed_duration_s"))
               + (f" of {_mmss(data.get('source_duration_s'))}"
                  if data.get("truncated") else ""), label_width=46)
+    # Absent, not neutral. The affect models are skipped when the record came
+    # from the extraction model, and printing "NEU 0.50" for a reading nobody
+    # took would be a measurement of nothing.
     sentiment = data.get("sentiment") or {}
     emotion = data.get("emotion") or {}
     if sentiment or emotion:
         pdf.field("Caller affect", sanitize(
             f"{sentiment.get('label', '?')} "
-            f"({float(sentiment.get('score', 0)):.2f})   |   "
+            f"({float(sentiment.get('score') or 0):.2f})   |   "
             f"{emotion.get('label', '?')} "
-            f"({float(emotion.get('score', 0)):.2f})"), label_width=46)
+            f"({float(emotion.get('score') or 0):.2f})"), label_width=46)
         pdf.note("Affect is a weak signal on telephone audio and feeds the "
                  "severity score only as one term of four.")
+
+    if data.get("second_opinion") is False:
+        pdf.field("Second opinion", "not run - the extraction model classified "
+                                    "this call and the local classifiers were "
+                                    "skipped", label_width=46)
 
 
 def generate(data, output_folder):

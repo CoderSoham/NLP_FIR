@@ -16,6 +16,7 @@ output. The classical NLP path stays the floor, not the fallback.
 import json
 import os
 import re
+import time
 
 from utils import gpu
 from utils import llm_providers
@@ -528,6 +529,7 @@ def extract_incident(transcript, **context):
                       "reason": _LAST_ERROR or "no LLM backend configured"}
 
     attempts = []
+    started = time.monotonic()
     record, error = _attempt(backend, transcript, context)
     attempts.append({"backend": backend.name, "error": error})
 
@@ -550,6 +552,7 @@ def extract_incident(transcript, **context):
     if record is None:
         return None, {"status": "failed", "backend": attempts[0]["backend"],
                       "reason": attempts[0]["error"] or "no record returned",
+                      "seconds": round(time.monotonic() - started, 1),
                       "attempts": attempts}
 
     try:
@@ -564,7 +567,12 @@ def extract_incident(transcript, **context):
         # is the loaded torch module, so that expression put a 30-line
         # Qwen2ForCausalLM repr into the API response.
         meta = {"status": "ok", "backend": backend.name,
-                "model": backend.describe()}
+                "model": backend.describe(),
+                # The stage runs concurrently with the local ones, so its own
+                # wall time is no longer visible in the stage timings. It is
+                # the only way to tell whether the pipeline is waiting on this
+                # or on the GPU.
+                "seconds": round(time.monotonic() - started, 1)}
         if len(attempts) > 1:
             # The report should say the primary was skipped and why, rather
             # than quietly naming a provider the operator did not configure.

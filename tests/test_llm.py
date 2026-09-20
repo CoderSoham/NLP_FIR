@@ -93,7 +93,12 @@ def test_a_working_backend_reports_itself(monkeypatch):
             return _coerce(MINIMAL)
     monkeypatch.setattr(llm, "get_backend", lambda: Fake())
     record, meta = extract_incident("There is a fire.")
-    assert meta == {"status": "ok", "backend": "fake", "model": "test-model"}
+    assert meta["status"] == "ok"
+    assert meta["backend"] == "fake"
+    assert meta["model"] == "test-model"
+    # The stage runs concurrently with the local ones, so its own wall
+    # time is the only way to tell what the pipeline is waiting on.
+    assert meta["seconds"] >= 0
     assert record["incident_type"] == "police"
 
 
@@ -476,3 +481,44 @@ def test_the_cpu_path_does_not_load_at_float32():
             if not ln.lstrip().startswith("#")]
     assert any("bfloat16" in ln for ln in code)
     assert not any("float32" in ln for ln in code)
+
+
+# ---- FEAT-022: the comparison is only reported when there was one ----------
+
+def test_no_disagreement_is_reported_when_both_sides_came_from_the_model():
+    """Regression: the classical severity can now be the model's own, and the
+    'critical' -> 'high' fold was applied to one side only -- so a call the
+    model called critical was reported as disagreeing with itself."""
+    from utils.audio_utils import compare_classifications
+
+    classical = {"emergency_type": "police", "severity": "critical",
+                 "probable_location": "Bannister", "response": {}}
+    record = {"incident_type": "police", "severity": "critical",
+              "location": "1331 Bannister Road", "weapons": []}
+    assert compare_classifications(classical, record,
+                                   second_opinion=False) == []
+
+
+def test_the_severity_fold_is_applied_to_both_sides():
+    from utils.audio_utils import compare_classifications
+
+    classical = {"emergency_type": "police", "severity": "critical",
+                 "probable_location": "x", "response": {}}
+    record = {"incident_type": "police", "severity": "high",
+              "location": "x", "weapons": []}
+    # critical and high are the same band on the classical scale.
+    assert compare_classifications(classical, record) == []
+
+
+def test_weapons_and_location_are_still_compared_without_a_second_opinion():
+    """Those come from the keyword matcher and spaCy, which run either way."""
+    from utils.audio_utils import compare_classifications
+
+    classical = {"emergency_type": "police", "severity": "high",
+                 "probable_location": None,
+                 "response": {"signals": {"weapons": ["gun"]}}}
+    record = {"incident_type": "police", "severity": "high",
+              "location": "1331 Bannister Road", "weapons": []}
+    fields = {d["field"] for d in
+              compare_classifications(classical, record, second_opinion=False)}
+    assert fields == {"weapons", "location"}

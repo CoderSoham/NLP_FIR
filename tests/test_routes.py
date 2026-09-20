@@ -183,3 +183,23 @@ def test_charts_are_not_fetched_until_the_section_is_opened(pipeline):
         assert "data-src=" in tag
         assert "src=" not in tag.replace("data-src=", "")
         assert 'loading="lazy"' not in tag
+
+
+def test_the_page_says_which_path_classified_the_call(pipeline):
+    """Without the local classifiers there is no independent second opinion,
+    and the disagreement banner cannot fire on type or severity. A reader is
+    entitled to know which of those two situations they are looking at."""
+    from conftest import upload
+
+    pipeline.llm_meta = {"status": "ok", "model": "test", "second_opinion": False}
+    html = upload(pipeline.client).get_data(as_text=True)
+    assert "The extraction model alone" in html
+    assert "LOCAL_ANALYSIS=always" in html
+
+
+def test_a_second_opinion_is_reported_when_one_was_taken(pipeline):
+    from conftest import upload
+
+    pipeline.llm_meta = {"status": "ok", "model": "test", "second_opinion": True}
+    html = upload(pipeline.client).get_data(as_text=True)
+    assert "ran as a second opinion" in html

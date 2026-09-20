@@ -1,4 +1,5 @@
 import os
+import time
 import uuid
 import torch
 import librosa
@@ -27,6 +28,7 @@ from utils.dispatch import get_dispatch_suggestion
 from utils.signals import augment_actions
 from utils.severity import severity_score, severity_label
 from utils.summary import length_budget, is_informative
+from utils.policy import local_analysis_wanted, model_summary
 from utils.llm import extract_incident, get_backend as llm_get_backend
 from utils import gpu
 from utils.jobs import spawn as jobs_spawn
@@ -93,6 +95,27 @@ def unload_nlp_models():
 
 
 STAGE_WARNINGS = []
+
+
+def _collect_incident(future, transcript, **context):
+    """Result of the extraction stage, whether it was forked or not.
+
+    Returns (record, meta) and never raises -- a failed enrichment must not
+    fail a request that has already transcribed and classified a call.
+    """
+    if future is None:
+        return extract_incident(transcript, **context)
+    waited = time.monotonic()
+    record, meta = future()
+    meta = dict(meta or {})
+    # How long the join actually blocked, as opposed to how long the call
+    # took. The difference is what the local stages managed to hide.
+    meta["waited_seconds"] = round(time.monotonic() - waited, 1)
+    # Worth recording. It is the difference between a 220s request and an 18s
+    # one, and the first thing to check if the two paths ever start
+    # disagreeing more than they used to.
+    meta["concurrent"] = True
+    return record, meta
 
 
 def note_stage_failure(stage, exc):
@@ -634,27 +657,52 @@ def process_audio_file(input_path, output_folder, progress=None):
         say(None, entities=entities[:12])
 
         # Get emergency type and severity
-        say("Classifying the emergency")
-        emergency_type = get_emergency_type(translated_text)
-        severity = assess_severity(translated_text, entities)
-        
-        # Generate response
+        # The incident record is collected before the local classifiers, not
+        # after them, because whether it succeeded decides whether they have
+        # to run at all. Only spaCy overlaps the network call now, so this
+        # join waits -- and then saves a minute and a quarter of BART.
+        say("Reading the call for an incident record")
+        llm_record, llm_meta = _collect_incident(
+            llm_future, translated_text, truncated=truncated,
+            source_seconds=source_duration, analysed_seconds=analysed_duration)
+
+        second_opinion = local_analysis_wanted(llm_record)
+        llm_meta = dict(llm_meta or {})
+        llm_meta['second_opinion'] = second_opinion
+
+        if second_opinion:
+            say("Classifying the emergency")
+            emergency_type = get_emergency_type(translated_text)
+            severity = assess_severity(translated_text, entities)
+        else:
+            # The model already answered both, better and faster, and it was
+            # measured doing so. Two BART-large passes to produce a worse
+            # version of an answer already in hand is not a second opinion.
+            emergency_type = (llm_record.get('incident_type') or 'unknown')
+            severity = llm_record.get('severity') or 'low'
+
         response = get_emergency_response(emergency_type)
         response = augment_actions_from_transcript(translated_text, response)
         response_time = calculate_response_time(emergency_type, response['priority'])
         say(None, emergency_type=emergency_type, severity=severity,
             priority=response['priority'], response_time=response_time)
-        
-        # Generate summary
-        # Prefer high-quality chunked summarization
-        say("Summarising")
-        summary = summarize_text_chunked(translated_text)
-        if not is_summary_informative(summary, translated_text):
-            # Fallback to T5; if still low-value, leave empty for UI to hide
-            summary = summarize_text(translated_text)
+
+        # Summarise only when the model did not. Two summaries of one call is
+        # not a second opinion either, and the report already suppressed this
+        # one in favour of the model's -- so the pipeline was spending a
+        # minute of BART on text nobody would read.
+        summary = model_summary(llm_record)
+        summarised_by = "model"
+        if not summary:
+            say("Summarising")
+            summarised_by = "bart"
+            summary = summarize_text_chunked(translated_text)
             if not is_summary_informative(summary, translated_text):
-                summary = ""
-        say(None, summary=summary)
+                # Fallback to T5; if still low-value, leave empty for UI to hide
+                summary = summarize_text(translated_text)
+                if not is_summary_informative(summary, translated_text):
+                    summary = ""
+        say(None, summary=summary, summarised_by=summarised_by)
 
         # Simple location extraction heuristic (reuses the doc parsed above)
         probable_location = None
@@ -663,25 +711,35 @@ def process_audio_file(input_path, output_folder, progress=None):
                 probable_location = ent.text
                 break
 
-        # Best match against known commands using embeddings
-        embedder = load_embedder()
-        with torch.no_grad():
-            known_emb = get_known_embeddings()
-            query_emb = embedder.encode([translated_text], convert_to_tensor=True)
-            cos_scores = util.cos_sim(query_emb, known_emb)[0]
-            top_idx = int(torch.argmax(cos_scores).item())
-            best_match = known_commands[top_idx]
-            score = float(cos_scores[top_idx].item())
+        # Three more local models, all display-only once the record exists.
+        # Caller affect is a weak signal that feeds the severity score as one
+        # term of four -- and when the model classified the call, that scorer
+        # did not run, so these feed nothing at all. Together they are ~8s of
+        # cold loading for a line in the PDF.
+        #
+        # They are reported as absent rather than as a neutral default. A
+        # fabricated "NEU 0.50" is indistinguishable from a genuine neutral
+        # reading, which is how two dead models went unnoticed for a week --
+        # see note_stage_failure and the severity scorer.
+        best_match = score = sentiment = emotion = None
+        if second_opinion:
+            embedder = load_embedder()
+            with torch.no_grad():
+                known_emb = get_known_embeddings()
+                query_emb = embedder.encode([translated_text], convert_to_tensor=True)
+                cos_scores = util.cos_sim(query_emb, known_emb)[0]
+                top_idx = int(torch.argmax(cos_scores).item())
+                best_match = known_commands[top_idx]
+                score = float(cos_scores[top_idx].item())
 
-        # Sentiment and emotion (best effort)
-        try:
-            sentiment = load_sentiment_analyzer()(translated_text[:256])[0]
-        except Exception:
-            sentiment = {"label": "NEU", "score": 0.5}
-        try:
-            emotion = load_emotion_detector()(translated_text[:256])[0]
-        except Exception:
-            emotion = {"label": "neutral", "score": 0.5}
+            try:
+                sentiment = load_sentiment_analyzer()(translated_text[:256])[0]
+            except Exception as exc:
+                note_stage_failure("sentiment", exc)
+            try:
+                emotion = load_emotion_detector()(translated_text[:256])[0]
+            except Exception as exc:
+                note_stage_failure("emotion", exc)
         
         # Generate PDF report
         # Dispatch suggestion
@@ -697,6 +755,8 @@ def process_audio_file(input_path, output_folder, progress=None):
             'response': response,
             'response_time': response_time,
             'summary': summary,
+            'summarised_by': summarised_by,
+            'second_opinion': second_opinion,
             'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             'entities': entities,
             'plots': plots,
@@ -716,25 +776,13 @@ def process_audio_file(input_path, output_folder, progress=None):
             'dispatch': dispatch
         }
         
-        # LLM enrichment. Runs after the classical path, never instead of it:
-        # the deterministic stages are the floor, and both results are kept so
-        # a disagreement between them can be surfaced rather than hidden.
-        say("Reading the call for an incident record")
-        if llm_future is not None:
-            llm_record, llm_meta = llm_future()
-            llm_meta = dict(llm_meta or {})
-            # Worth recording: it is the difference between a 160s request and
-            # a 220s one, and it is the first thing to check if the two paths
-            # ever start disagreeing more than they used to.
-            llm_meta['concurrent'] = True
-        else:
-            llm_record, llm_meta = extract_incident(
-                translated_text, truncated=truncated,
-                source_seconds=source_duration,
-                analysed_seconds=analysed_duration)
+        # The classical path stays the floor, never the fallback: both
+        # results are kept so a disagreement between them can be surfaced
+        # rather than resolved silently.
         data['llm'] = llm_record
         data['llm_meta'] = llm_meta
-        data['disagreements'] = compare_classifications(data, llm_record)
+        data['disagreements'] = compare_classifications(
+            data, llm_record, second_opinion=second_opinion)
 
         say("Writing the report")
         data['fir_pdf'] = generate_fir_pdf(data)
@@ -745,36 +793,50 @@ def process_audio_file(input_path, output_folder, progress=None):
         print(f"Error processing audio file: {str(e)}")
         raise  # Re-raise the exception to handle it in the Flask route
 
-def compare_classifications(classical, llm_record):
+# The LLM has a 'critical' band the classical scorer does not. Folding it in
+# is only sound applied to *both* sides: when the classical value came from the
+# model itself, folding one side turned 'critical' vs 'critical' into a
+# reported disagreement.
+SEVERITY_SCALE = {'critical': 'high'}
+
+
+def compare_classifications(classical, llm_record, second_opinion=True):
     """Where the classical pipeline and the LLM disagree.
 
     A disagreement is information, not an error. Two independent methods
     reaching different conclusions about an emergency call is exactly the case
     a human should look at, so it is reported rather than resolved by picking a
     winner.
+
+    `second_opinion` says whether the BART classifiers actually ran. When they
+    did not, type and severity on both sides came from the same model, and
+    comparing a value with itself is not a comparison. Weapons and location
+    still are: those come from the keyword matcher and spaCy, which run either
+    way.
     """
     if not llm_record:
         return []
 
     found = []
-    llm_type = llm_record.get('incident_type')
-    if llm_type and llm_type not in ('unknown', 'other') and llm_type != classical.get('emergency_type'):
-        found.append({
-            'field': 'emergency_type',
-            'classical': classical.get('emergency_type'),
-            'llm': llm_type,
-        })
+    if second_opinion:
+        llm_type = llm_record.get('incident_type')
+        if llm_type and llm_type not in ('unknown', 'other') and llm_type != classical.get('emergency_type'):
+            found.append({
+                'field': 'emergency_type',
+                'classical': classical.get('emergency_type'),
+                'llm': llm_type,
+            })
 
-    # The LLM has a 'critical' band the classical scorer does not; fold it in
-    # before comparing so the two are on the same scale.
-    llm_sev = llm_record.get('severity')
-    normalised = {'critical': 'high'}.get(llm_sev, llm_sev)
-    if normalised and normalised != 'unknown' and normalised != classical.get('severity'):
-        found.append({
-            'field': 'severity',
-            'classical': classical.get('severity'),
-            'llm': llm_sev,
-        })
+        llm_sev = llm_record.get('severity')
+        normalised = SEVERITY_SCALE.get(llm_sev, llm_sev)
+        classical_sev = classical.get('severity')
+        if (normalised and normalised != 'unknown'
+                and normalised != SEVERITY_SCALE.get(classical_sev, classical_sev)):
+            found.append({
+                'field': 'severity',
+                'classical': classical_sev,
+                'llm': llm_sev,
+            })
 
     # The keyword matcher flags weapons on any mention; the LLM is asked to
     # ignore figures of speech. This is the disagreement that matters most.
