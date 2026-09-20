@@ -191,6 +191,15 @@ class FIRReport(FPDF):
         self.ln(3)
 
 
+def _minutes(value):
+    """Whole minutes. "5.0 minutes" reads as a measurement of something."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return "unknown"
+    return f"{number:g}"
+
+
 def _mmss(seconds):
     """Durations as mm:ss. "9:50" is a length; "590.1s" is a measurement."""
     try:
@@ -223,7 +232,8 @@ def _triage_band(pdf, data, record):
     pdf.multi_cell(CONTENT_WIDTH, 6, sanitize(
         f"  Priority: {(response.get('priority') or 'unknown').title()}"
         f"   |   Protocol target: "
-        f"{response.get('estimated_response_time', '-')} minutes"), fill=True, **FLOW)
+        f"{_minutes(response.get('estimated_response_time'))} minutes"),
+        fill=True, **FLOW)
 
     # What recording this is, and how much of it was heard. Without this the
     # only identifying mark on the document was a truncated hex id in the page

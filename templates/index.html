@@ -209,8 +209,12 @@
       {% for kind in plots %}
       {% set meta = plot_titles.get(kind, [kind, '']) %}
       <figure class="chart">
-        <img src="{{ url_for('serve_plot', report_id=report_id, kind=kind) }}"
-             class="plot" loading="lazy" alt="{{ meta[0] }}">
+        <!-- data-src, not loading="lazy". An image with loading="lazy"
+             inside a <details> that starts closed never fetches, not even
+             once the details is opened -- the section rendered as four 2px
+             slivers. The script below sets src on first open. -->
+        <img data-src="{{ url_for('serve_plot', report_id=report_id, kind=kind) }}"
+             class="plot" alt="{{ meta[0] }}">
         <figcaption><strong>{{ meta[0] }}</strong> {{ meta[1] }}</figcaption>
       </figure>
       {% endfor %}
@@ -302,13 +306,21 @@
     // per-report one. Wrapped because storage throws in a private window.
     const charts = document.getElementById('charts');
     if (charts) {
+      const loadCharts = () => {
+        for (const img of charts.querySelectorAll('img[data-src]')) {
+          img.src = img.dataset.src;
+          img.removeAttribute('data-src');
+        }
+      };
+      charts.addEventListener('toggle', () => {
+        if (charts.open) loadCharts();
+        try { localStorage.setItem('charts-open', charts.open ? '1' : '0'); }
+        catch (err) { /* storage unavailable; the toggle still works */ }
+      });
       try {
-        charts.open = localStorage.getItem('charts-open') === '1';
-        charts.addEventListener('toggle', () => {
-          try { localStorage.setItem('charts-open', charts.open ? '1' : '0'); }
-          catch (err) { /* storage unavailable; the toggle still works */ }
-        });
+        if (localStorage.getItem('charts-open') === '1') charts.open = true;
       } catch (err) { /* leave it closed */ }
+      if (charts.open) loadCharts();
     }
   </script>
 </body>

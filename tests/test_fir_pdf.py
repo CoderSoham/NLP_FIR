@@ -228,3 +228,12 @@ def test_the_bullet_survives_sanitising():
     hanging indent with no marker."""
     assert sanitize(fir_pdf.BULLET) == fir_pdf.BULLET
     assert sanitize("• item") == "· item"
+
+
+@pytest.mark.parametrize("value,expected", [
+    (5.0, "5"), (5, "5"), (7.5, "7.5"), ("12", "12"),
+    (None, "unknown"), ("soon", "unknown"),
+])
+def test_protocol_targets_are_whole_minutes(value, expected):
+    """'5.0 minutes' reads as a measurement of something."""
+    assert fir_pdf._minutes(value) == expected

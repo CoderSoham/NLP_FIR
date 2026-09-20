@@ -165,3 +165,21 @@ def test_every_chart_carries_a_caption(pipeline):
 
     html = upload(pipeline.client).get_data(as_text=True)
     assert html.count("<figcaption>") == len(pipeline.plots)
+
+
+def test_charts_are_not_fetched_until_the_section_is_opened(pipeline):
+    """loading="lazy" inside a closed <details> never fetches at all, not even
+    on open -- the section rendered as four 2px slivers. src is set by script
+    on first open instead."""
+    from conftest import upload
+
+    html = upload(pipeline.client).get_data(as_text=True)
+    import re
+
+    charts = html.split('class="section charts"', 1)[1].split("</details>", 1)[0]
+    tags = re.findall(r"<img\b[^>]*>", charts)
+    assert len(tags) == len(pipeline.plots)
+    for tag in tags:
+        assert "data-src=" in tag
+        assert "src=" not in tag.replace("data-src=", "")
+        assert 'loading="lazy"' not in tag
