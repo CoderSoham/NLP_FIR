@@ -302,3 +302,116 @@ def test_a_numeric_scalar_becomes_a_string():
 
 def test_an_empty_dict_location_becomes_none():
     assert _coerce(dict(MINIMAL, location={}))["location"] is None
+
+
+# ---- Failover between hosted providers --------------------------------------
+# A free tier returning 429 for an hour is the expected case, not the unlucky
+# one. If a second key is already in the environment, the stage should use it.
+
+class _Fallible:
+    """A hosted backend that fails a fixed number of times, then succeeds."""
+
+    is_hosted = True
+
+    def __init__(self, name, failures=0):
+        self.name = name
+        self.failures = failures
+        self.calls = 0
+
+    def describe(self):
+        return f"model @ {self.name}"
+
+    def extract(self, *_a, **_k):
+        self.calls += 1
+        if self.calls <= self.failures:
+            raise LLMUnavailable("429 rate limit exceeded")
+        return _coerce(MINIMAL)
+
+
+def test_fallback_chain_lists_only_providers_with_keys(monkeypatch):
+    monkeypatch.delenv("LLM_FALLBACK_BACKENDS", raising=False)
+    for cfg in llm.llm_providers.PROVIDERS.values():
+        if cfg.get("key_env"):
+            monkeypatch.delenv(cfg["key_env"], raising=False)
+    monkeypatch.setenv("GROQ_API_KEY", "k")
+    assert llm.fallback_backends("nvidia") == ["groq"]
+
+
+def test_fallback_chain_excludes_the_primary(monkeypatch):
+    monkeypatch.setenv("NVIDIA_API_KEY", "k")
+    monkeypatch.setenv("GROQ_API_KEY", "k")
+    assert "nvidia" not in llm.fallback_backends("nvidia")
+
+
+def test_fallback_chain_can_be_disabled(monkeypatch):
+    monkeypatch.setenv("LLM_FALLBACK_BACKENDS", "")
+    monkeypatch.setenv("GROQ_API_KEY", "k")
+    assert llm.fallback_backends("nvidia") == []
+
+
+def test_fallback_chain_is_explicit_when_set(monkeypatch):
+    monkeypatch.setenv("LLM_FALLBACK_BACKENDS", "groq, cerebras")
+    assert llm.fallback_backends("nvidia") == ["groq", "cerebras"]
+
+
+def test_a_rate_limited_primary_falls_over_to_the_next_provider(monkeypatch):
+    primary, alt = _Fallible("nvidia", failures=1), _Fallible("groq")
+    monkeypatch.setattr(llm, "get_backend", lambda: primary)
+    monkeypatch.setattr(llm, "fallback_backends", lambda _p: ["groq"])
+    monkeypatch.setattr(llm, "OpenAICompatibleBackend", lambda _n: alt)
+
+    record, meta = extract_incident("There is a fire.")
+
+    assert record is not None
+    assert meta["status"] == "ok"
+    assert meta["backend"] == "groq"
+    assert meta["failed_over_from"] == "nvidia"
+    assert [a["backend"] for a in meta["attempts"]] == ["nvidia", "groq"]
+
+
+def test_a_working_primary_is_not_retried_elsewhere(monkeypatch):
+    primary, alt = _Fallible("nvidia"), _Fallible("groq")
+    monkeypatch.setattr(llm, "get_backend", lambda: primary)
+    monkeypatch.setattr(llm, "fallback_backends", lambda _p: ["groq"])
+    monkeypatch.setattr(llm, "OpenAICompatibleBackend", lambda _n: alt)
+
+    _record, meta = extract_incident("There is a fire.")
+
+    assert alt.calls == 0
+    assert "attempts" not in meta       # a clean run stays uncluttered
+
+
+def test_every_provider_failing_reports_the_primary_reason(monkeypatch):
+    primary, alt = _Fallible("nvidia", failures=9), _Fallible("groq", failures=9)
+    monkeypatch.setattr(llm, "get_backend", lambda: primary)
+    monkeypatch.setattr(llm, "fallback_backends", lambda _p: ["groq"])
+    monkeypatch.setattr(llm, "OpenAICompatibleBackend", lambda _n: alt)
+
+    record, meta = extract_incident("There is a fire.")
+
+    assert record is None
+    assert meta["status"] == "failed"
+    assert meta["backend"] == "nvidia"          # blame the configured one
+    assert "429" in meta["reason"]
+    assert len(meta["attempts"]) == 2
+
+
+def test_a_local_backend_does_not_fall_over(monkeypatch):
+    """A local failure is this machine's; a second local model fails the same."""
+    local = _Fallible("local", failures=9)
+    local.is_hosted = False
+    alt = _Fallible("groq")
+    monkeypatch.setattr(llm, "get_backend", lambda: local)
+    monkeypatch.setattr(llm, "fallback_backends", lambda _p: ["groq"])
+    monkeypatch.setattr(llm, "OpenAICompatibleBackend", lambda _n: alt)
+
+    record, meta = extract_incident("There is a fire.")
+
+    assert record is None and alt.calls == 0
+    assert meta["backend"] == "local"
+
+
+def test_local_backend_is_not_hosted():
+    """The pipeline overlaps the LLM with GPU stages only when it is hosted."""
+    assert llm.LocalBackend.is_hosted is False
+    assert llm.AnthropicBackend.is_hosted is True

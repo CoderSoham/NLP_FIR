@@ -129,6 +129,11 @@ python -m utils.llm_providers nvidia
 `anthropic`, `ollama` and `llamacpp` — anything speaking the OpenAI
 chat-completions shape. `python -m utils.llm_providers` lists them.
 
+Free tiers run out. If the chosen provider is rate limited, any other hosted
+provider whose key is in the environment is tried next; `LLM_FALLBACK_BACKENDS`
+sets that order explicitly, or turns it off when empty. The result page names
+the provider that answered.
+
 > **A hosted provider receives your data.** The language model receives the
 > transcript; hosted transcription receives **the audio itself**. Emergency-call
 > recordings contain names, addresses, phone numbers and medical detail, and
@@ -199,6 +204,7 @@ Every setting is an environment variable, read in `config.py`.
 | `NVIDIA_API_KEY` | unset | Enables `LLM_BACKEND=nvidia` |
 | `GROQ_API_KEY` | unset | Enables `ASR_BACKEND=groq` and `LLM_BACKEND=groq` |
 | `LLM_MODEL` | by provider | Override the provider's default model |
+| `LLM_FALLBACK_BACKENDS` | keys present | Providers to try if the first is rate limited |
 | `TRANSCRIPT_CACHE` | `storage/transcripts` | Cached transcripts, keyed by audio hash |
 | `LOCAL_LLM_MODEL` | by hardware | Any instruct model on the Hub |
 | `LOCAL_LLM_DEVICE` | by hardware | `cuda` or `cpu` |

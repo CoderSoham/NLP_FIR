@@ -28,6 +28,16 @@
 
     <ol class="steps" id="steps"></ol>
 
+    <!-- Filled in as each stage produces something. The transcript lands
+         about fifteen seconds in, while the classifiers and the LLM still
+         have two minutes to run, so there is no reason to withhold it. -->
+    <div class="section preview" id="preview" hidden>
+      <h2>So far</h2>
+      <div class="chips" id="chips"></div>
+      <p class="muted" id="summary-line" hidden></p>
+      <div class="transcript-live" id="transcript" hidden></div>
+    </div>
+
     {% if audio_url %}
     <div class="section">
       <h2>Your recording</h2>
@@ -42,7 +52,41 @@
     const stageEl = document.getElementById('stage');
     const elapsedEl = document.getElementById('elapsed');
     const stepsEl = document.getElementById('steps');
+    const previewEl = document.getElementById('preview');
+    const chipsEl = document.getElementById('chips');
+    const summaryEl = document.getElementById('summary-line');
+    const transcriptEl = document.getElementById('transcript');
     const seen = new Set();
+
+    const esc = (s) => String(s).replace(/[&<>"]/g,
+      (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+    function renderPreview(p) {
+      if (!p || Object.keys(p).length === 0) return;
+      previewEl.hidden = false;
+
+      const chips = [];
+      if (p.language)       chips.push(['Language', p.language]);
+      if (p.analysed_seconds) chips.push(['Analysed', `${p.analysed_seconds}s`]);
+      if (p.emergency_type) chips.push(['Type', p.emergency_type]);
+      if (p.severity)       chips.push(['Severity', p.severity]);
+      if (p.priority)       chips.push(['Priority', p.priority]);
+      if (p.response_time)  chips.push(['ETA', p.response_time]);
+      if (p.entities)       chips.push(['Entities', p.entities.length]);
+      if (p.truncated)      chips.push(['Truncated', 'yes']);
+      chipsEl.innerHTML = chips
+        .map(([k, v]) => `<span class="chip"><b>${esc(k)}</b> ${esc(v)}</span>`)
+        .join('');
+
+      if (p.summary) {
+        summaryEl.hidden = false;
+        summaryEl.textContent = p.summary;
+      }
+      if (p.transcript) {
+        transcriptEl.hidden = false;
+        transcriptEl.textContent = p.transcript;
+      }
+    }
 
     async function poll() {
       let state;
@@ -58,6 +102,7 @@
 
       stageEl.textContent = state.stage;
       elapsedEl.textContent = state.elapsed;
+      renderPreview(state.partial);
 
       // Completed stages keep the time they took, so a slow one is visible.
       for (const h of state.history) {

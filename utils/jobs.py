@@ -45,12 +45,25 @@ def submit(fn, *args, **kwargs):
         _JOBS[job_id] = {"id": job_id, "status": "queued", "stage": "Queued",
                          "created": time.time(), "started": None,
                          "finished": None, "result": None, "error": None,
-                         "history": []}
+                         "history": [], "partial": {}}
 
-    def progress(stage):
+    def progress(stage, **partial):
+        """Announce a stage, and optionally publish what it produced.
+
+        The keyword payload is what makes the wait informative rather than
+        merely animated: the transcript is readable about twenty seconds in,
+        while the classifiers and the LLM still have two minutes to run. It is
+        merged, not replaced, so each stage adds to the picture.
+        """
         with _LOCK:
             job = _JOBS.get(job_id)
             if job is None:
+                return
+            if partial:
+                job["partial"].update(partial)
+            # A stage of None publishes data without starting a new step, so
+            # the step list stays a list of stages and not of events.
+            if stage is None:
                 return
             now = time.time()
             if job["history"]:
@@ -104,4 +117,33 @@ def status(job_id):
         "error": job["error"],
         "history": [{"stage": h["stage"], "seconds": h.get("seconds")}
                     for h in job["history"]],
+        "partial": dict(job["partial"]),
     }
+
+
+def spawn(fn, *args, **kwargs):
+    """Start `fn` now; return a callable that waits for and returns its result.
+
+    Used inside a single pipeline run to overlap a network-bound stage with a
+    GPU-bound one. Deliberately not a ThreadPoolExecutor: one background call
+    per request, no pool to size or shut down, and an exception is re-raised on
+    join exactly where it would have surfaced had the call been inline.
+    """
+    box = {}
+
+    def run():
+        try:
+            box["value"] = fn(*args, **kwargs)
+        except BaseException as exc:      # noqa: BLE001 - re-raised on join
+            box["error"] = exc
+
+    thread = threading.Thread(target=run, daemon=True, name="spawn")
+    thread.start()
+
+    def join():
+        thread.join()
+        if "error" in box:
+            raise box["error"]
+        return box["value"]
+
+    return join

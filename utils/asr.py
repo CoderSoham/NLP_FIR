@@ -235,6 +235,7 @@ def transcribe_file(audio_path, use_cache=True, backend=None, audio=None,
         result = transcribe(audio, **kwargs)
 
     result["cached"] = False
+    result["backend"] = backend
     result["fingerprint"] = fingerprint
     cache_put(fingerprint, f"{backend}:{model}", result)
     return result

@@ -28,8 +28,9 @@ from utils.dispatch import get_dispatch_suggestion
 from utils.signals import augment_actions
 from utils.severity import severity_score, severity_label
 from utils.summary import length_budget, is_informative
-from utils.llm import extract_incident
+from utils.llm import extract_incident, get_backend as llm_get_backend
 from utils import gpu
+from utils.jobs import spawn as jobs_spawn
 from utils.asr import transcribe_file as asr_transcribe_file
 from utils.audio_clean import clean_audio
 from typing import Optional, Tuple
@@ -548,7 +549,7 @@ def process_audio_file(input_path, output_folder, progress=None):
     `progress` receives a short phrase per stage, written for a reader waiting
     on a page rather than as a stage identifier.
     """
-    say = progress or (lambda _stage: None)
+    say = progress or (lambda _stage, **_kw: None)
     try:
         # Load audio file with specific parameters for Whisper
         say("Loading audio")
@@ -596,6 +597,10 @@ def process_audio_file(input_path, output_folder, progress=None):
         lang = asr_result["language"]
 
         # If non-English, translate to English for the downstream stages.
+        say(None, transcript=transcription,
+            language=lang, analysed_seconds=round(analysed_duration, 1),
+            truncated=truncated)
+
         translated_text = transcription
         if lang and lang != 'en':
             try:
@@ -605,6 +610,22 @@ def process_audio_file(input_path, output_folder, progress=None):
             except Exception:
                 translated_text = transcription
         
+        # The LLM stage is a network call when the backend is hosted, and the
+        # stages below are GPU work. Run them at the same time. Serially this
+        # was 66s of waiting on a socket while a 6GB card sat idle; the join
+        # below is usually instant by the time the classifiers finish.
+        #
+        # A *local* backend is explicitly excluded -- it competes for the same
+        # VRAM as the classifiers, and overlapping them is how this pipeline
+        # spent a week out of memory.
+        llm_future = None
+        llm_backend = llm_get_backend()
+        if llm_backend is not None and getattr(llm_backend, "is_hosted", False):
+            llm_future = jobs_spawn(
+                extract_incident, translated_text, truncated=truncated,
+                source_seconds=source_duration,
+                analysed_seconds=analysed_duration)
+
         # Named entities first -- severity weights them, so they have to exist
         # before it runs. Previously severity was called with a hardcoded []
         # and the entity term of its score was dead on every request.
@@ -614,6 +635,7 @@ def process_audio_file(input_path, output_folder, progress=None):
         entities = [{"text": ent.text, "label": ent.label_} for ent in doc.ents]
         if generate_entity_plot(entities, output_folder, report_id):
             plots.append('entities')
+        say(None, entities=entities[:12])
 
         # Get emergency type and severity
         say("Classifying the emergency")
@@ -624,6 +646,8 @@ def process_audio_file(input_path, output_folder, progress=None):
         response = get_emergency_response(emergency_type)
         response = augment_actions_from_transcript(translated_text, response)
         response_time = calculate_response_time(emergency_type, response['priority'])
+        say(None, emergency_type=emergency_type, severity=severity,
+            priority=response['priority'], response_time=response_time)
         
         # Generate summary
         # Prefer high-quality chunked summarization
@@ -634,6 +658,7 @@ def process_audio_file(input_path, output_folder, progress=None):
             summary = summarize_text(translated_text)
             if not is_summary_informative(summary, translated_text):
                 summary = ""
+        say(None, summary=summary)
 
         # Simple location extraction heuristic (reuses the doc parsed above)
         probable_location = None
@@ -699,9 +724,18 @@ def process_audio_file(input_path, output_folder, progress=None):
         # the deterministic stages are the floor, and both results are kept so
         # a disagreement between them can be surfaced rather than hidden.
         say("Reading the call for an incident record")
-        llm_record, llm_meta = extract_incident(
-            translated_text, truncated=truncated,
-            source_seconds=source_duration, analysed_seconds=analysed_duration)
+        if llm_future is not None:
+            llm_record, llm_meta = llm_future()
+            llm_meta = dict(llm_meta or {})
+            # Worth recording: it is the difference between a 160s request and
+            # a 220s one, and it is the first thing to check if the two paths
+            # ever start disagreeing more than they used to.
+            llm_meta['concurrent'] = True
+        else:
+            llm_record, llm_meta = extract_incident(
+                translated_text, truncated=truncated,
+                source_seconds=source_duration,
+                analysed_seconds=analysed_duration)
         data['llm'] = llm_record
         data['llm_meta'] = llm_meta
         data['disagreements'] = compare_classifications(data, llm_record)

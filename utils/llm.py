@@ -142,6 +142,9 @@ class AnthropicBackend:
     """Claude via the official SDK, using structured outputs."""
 
     name = "anthropic"
+    # Network-bound, so it can run alongside the GPU stages. See
+    # `utils.audio_utils` for why that distinction is load-bearing.
+    is_hosted = True
 
     def describe(self):
         return self.model
@@ -195,6 +198,9 @@ class LocalBackend:
     """
 
     name = "local"
+    # Shares the GPU with ASR, NER and the classifiers, so it must never be
+    # run concurrently with them.
+    is_hosted = False
 
     def describe(self):
         return f"{self.model_id} ({self.device})"
@@ -351,6 +357,9 @@ class OpenAICompatibleBackend:
     def __init__(self, provider):
         self.cfg = llm_providers.resolve(provider)
         self.name = provider
+        # ollama and llama.cpp speak the same protocol but hold their own VRAM
+        # on this machine, so they are not "hosted" for scheduling purposes.
+        self.is_hosted = bool(self.cfg.get("hosted"))
         if self.cfg["key_env"] and not self.cfg["api_key"]:
             raise LLMUnavailable(
                 f"{provider} needs {self.cfg['key_env']} in the environment")
@@ -422,6 +431,41 @@ def get_backend():
     return backend
 
 
+def fallback_backends(primary):
+    """Backends to try after `primary`, in preference order.
+
+    Free tiers are the point of this project's defaults, and a free tier is
+    exactly the kind of thing that returns 429 for an hour. The provider layer
+    already retries one endpoint; this is the next level up -- if NVIDIA is out
+    of quota and a Groq key is sitting in the same `.env`, the stage should use
+    it rather than report itself unavailable.
+
+    Set `LLM_FALLBACK_BACKENDS` to a comma-separated list to control the order,
+    or to an empty string to switch failover off entirely.
+    """
+    raw = os.environ.get("LLM_FALLBACK_BACKENDS")
+    if raw is not None:
+        names = [n.strip().lower() for n in raw.split(",") if n.strip()]
+    else:
+        # Any hosted provider whose key is actually present. Deriving it beats
+        # asking the user to maintain a second list that duplicates their keys.
+        names = [name for name, cfg in llm_providers.PROVIDERS.items()
+                 if cfg.get("hosted") and cfg.get("key_env")
+                 and os.environ.get(cfg["key_env"])]
+    return [n for n in names if n != primary]
+
+
+def _attempt(backend, transcript, context):
+    """One extraction. Returns (record, error_string)."""
+    try:
+        record = backend.extract(transcript, **context)
+    except LLMUnavailable as exc:
+        return None, str(exc)
+    except Exception as exc:
+        return None, f"{type(exc).__name__}: {exc}"
+    return record, None
+
+
 def extract_incident(transcript, **context):
     """Return (record, meta). `record` is None when the stage cannot run.
 
@@ -434,8 +478,33 @@ def extract_incident(transcript, **context):
     if backend is None:
         return None, {"status": "unavailable",
                       "reason": _LAST_ERROR or "no LLM backend configured"}
+
+    attempts = []
+    record, error = _attempt(backend, transcript, context)
+    attempts.append({"backend": backend.name, "error": error})
+
+    # Only a hosted primary falls back. A local model that failed did so
+    # because of this machine, and trying a second local model would fail the
+    # same way after another minute of loading.
+    if record is None and getattr(backend, "is_hosted", False):
+        for name in fallback_backends(backend.name):
+            try:
+                alt = OpenAICompatibleBackend(name)
+            except LLMUnavailable as exc:
+                attempts.append({"backend": name, "error": str(exc)})
+                continue
+            record, error = _attempt(alt, transcript, context)
+            attempts.append({"backend": name, "error": error})
+            if record is not None:
+                backend = alt
+                break
+
+    if record is None:
+        return None, {"status": "failed", "backend": attempts[0]["backend"],
+                      "reason": attempts[0]["error"] or "no record returned",
+                      "attempts": attempts}
+
     try:
-        record = backend.extract(transcript, **context)
         # Claims must survive their own evidence. A weapon the model cannot
         # quote from the transcript is dropped here rather than reaching an
         # officer-safety advisory.
@@ -446,10 +515,15 @@ def extract_incident(transcript, **context):
         # describe(), not getattr(backend, "model"): on LocalBackend `.model`
         # is the loaded torch module, so that expression put a 30-line
         # Qwen2ForCausalLM repr into the API response.
-        return record, {
-            "status": "ok", "backend": backend.name, "model": backend.describe()}
-    except LLMUnavailable as exc:
-        return None, {"status": "failed", "backend": backend.name, "reason": str(exc)}
+        meta = {"status": "ok", "backend": backend.name,
+                "model": backend.describe()}
+        if len(attempts) > 1:
+            # The report should say the primary was skipped and why, rather
+            # than quietly naming a provider the operator did not configure.
+            meta["attempts"] = attempts
+            meta["failed_over_from"] = attempts[0]["backend"]
+        return record, meta
     except Exception as exc:
         return None, {"status": "failed", "backend": backend.name,
-                      "reason": f"{type(exc).__name__}: {exc}"}
+                      "reason": f"{type(exc).__name__}: {exc}",
+                      "attempts": attempts}

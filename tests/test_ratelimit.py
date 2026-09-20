@@ -95,9 +95,15 @@ def test_route_requires_api_key_when_set(pipeline, monkeypatch):
 
 def test_fetching_an_artefact_is_not_rate_limited(pipeline, monkeypatch):
     """Only pipeline runs are limited; the result page loads four images."""
+    from conftest import upload as upload_and_wait
+
     import app as app_module
     monkeypatch.setattr(app_module, "limiter", RateLimiter(1, 600))
-    upload(pipeline.client)
+    # Must wait for the job: the local `upload` above returns as soon as the
+    # POST is accepted, and the plots are written by the worker thread. The
+    # GETs below would then race it -- which is exactly how this test began
+    # failing under random ordering and passing in file order.
+    upload_and_wait(pipeline.client)
     for _ in range(5):
         assert pipeline.client.get(
             f"/plot/{pipeline.report_id}/waveform").status_code == 200
