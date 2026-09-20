@@ -1,0 +1,16 @@
+# Keep model weights and build artefacts off a small root partition.
+#
+#     cp .venvrc.example .venvrc && edit the paths
+#     source .venvrc
+#
+# Only needed if your home directory is on a small disk. Several GB of model
+# weights land in the HuggingFace cache on the first run.
+
+BIG=/path/with/space
+
+export HF_HOME="$BIG/hf"
+export HUGGINGFACE_HUB_CACHE="$HF_HOME/hub"
+export TORCH_HOME="$BIG/torch"
+export XDG_CACHE_HOME="$BIG/cache"      # whisper and matplotlib caches
+export PIP_CACHE_DIR="$BIG/pip"
+export TMPDIR="$BIG/tmp"

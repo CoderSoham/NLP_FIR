@@ -21,8 +21,11 @@ Thumbs.db
 *.swp
 
 # Environment/config
+# Secrets. `.env.*` also matches `.env.example`, which must stay trackable --
+# it is the documentation of what goes in `.env` and carries no values.
 .env
 .env.*
+!.env.example
 *.local
 
 # Build/dist
@@ -37,6 +40,8 @@ models/
 
 # App generated media and outputs
 storage/
+# Cached transcripts are derived from call audio and carry the same PII.
+storage/transcripts/
 uploads/
 static/uploads/
 processed/
@@ -51,6 +56,9 @@ plots/
 *.jpg
 *.jpeg
 *.pdf
+
+# Machine-specific cache redirection (paths differ per machine).
+.venvrc
 
 # Temp files
 *.tmp
