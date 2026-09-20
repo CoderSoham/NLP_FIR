@@ -1,6 +1,11 @@
 # Test dependencies. Deliberately excludes the ML stack -- the suite runs
 # without torch, whisper, spacy or transformers installed, which is what keeps
 # it fast enough to run on every push.
+#
+# Anything a test imports directly belongs here, pinned to the same version as
+# requirements.txt. utils/fir_pdf.py and utils/plots.py are importable without
+# torch on purpose, so their dependencies are test dependencies too.
 pytest==8.2.0
 flask==2.3.3
 matplotlib==3.8.4
+fpdf2==2.8.4
