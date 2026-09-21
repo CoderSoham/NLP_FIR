@@ -79,21 +79,30 @@ def score(record, truth):
     return checks
 
 
+def model_env(backend):
+    """Which environment variable names the model for this backend."""
+    return "LOCAL_LLM_MODEL" if backend == "local" else "LLM_MODEL"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--transcripts", default=os.path.join(HERE, "transcripts.json"))
     ap.add_argument("--labels", default=os.path.join(HERE, "labels.json"))
-    ap.add_argument("--model", help="LOCAL_LLM_MODEL override")
-    ap.add_argument("--device", help="LOCAL_LLM_DEVICE override")
+    ap.add_argument("--model", help="model id, for whichever backend is chosen")
+    ap.add_argument("--device", help="LOCAL_LLM_DEVICE override; local only")
     ap.add_argument("--backend", default=os.environ.get("LLM_BACKEND", "local"))
     ap.add_argument("--out", default=os.path.join(HERE, "results"))
     args = ap.parse_args()
 
-    if args.model:
-        os.environ["LOCAL_LLM_MODEL"] = args.model
+    os.environ["LLM_BACKEND"] = args.backend
     if args.device:
         os.environ["LOCAL_LLM_DEVICE"] = args.device
-    os.environ["LLM_BACKEND"] = args.backend
+    if args.model:
+        # The two backends read different variables, and setting the wrong one
+        # is silent: `--model openai/gpt-oss-120b --backend groq` ran Groq's
+        # *default* model and printed its name, so a bake-off between two
+        # hosted models would have compared one model with itself.
+        os.environ[model_env(args.backend)] = args.model
 
     from utils.llm import extract_incident, get_backend
 
@@ -108,7 +117,11 @@ def main():
         print(f"FAILED to load backend: {llm_mod._LAST_ERROR}")
         return 1
     label = backend.describe()
-    print(f"backend={backend.name} model={label} load={load_s}s\n")
+    print(f"backend={backend.name} model={label} load={load_s}s")
+    if args.model and args.model not in label:
+        print(f"WARNING: asked for {args.model!r} but the backend reports "
+              f"{label!r} -- the results below are not for the model you named.")
+    print()
 
     rows, passed, total = [], 0, 0
     for sample, entry in sorted(transcripts.items()):

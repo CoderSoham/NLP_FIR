@@ -217,3 +217,14 @@ def test_a_generous_budget_still_allows_the_configured_retries(monkeypatch):
     with pytest.raises(RuntimeError, match="HTTP 503"):
         llm_providers.chat_completion(cfg, [{"role": "user", "content": "x"}])
     assert len(attempts) == 3            # the first, plus two retries
+
+
+def test_the_eval_model_flag_targets_the_right_backend():
+    """`--model X --backend groq` set LOCAL_LLM_MODEL, which only the local
+    backend reads -- so it ran Groq's default model and printed its name. A
+    bake-off between two hosted models would have compared one with itself."""
+    from eval.run import model_env
+
+    assert model_env("local") == "LOCAL_LLM_MODEL"
+    for hosted in ("groq", "nvidia", "openrouter", "cerebras", "anthropic"):
+        assert model_env(hosted) == "LLM_MODEL"

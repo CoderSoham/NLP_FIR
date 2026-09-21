@@ -47,7 +47,12 @@ PROVIDERS = {
     "groq": {
         "base_url": "https://api.groq.com/openai/v1",
         "key_env": "GROQ_API_KEY",
-        "default_model": "llama-3.3-70b-versatile",
+        # Measured 82/84 on the fourteen-sample evaluation set at an 18.1s
+        # median -- better than nemotron-3-ultra's 81/84 and half its latency,
+        # with a tail that ends where nemotron's median begins (34.2s max
+        # against 86.3s). llama-3.3-70b-versatile was the previous default and
+        # took 70.8s on the first sample alone.
+        "default_model": "openai/gpt-oss-120b",
         "hosted": True,
         "note": "Fastest hosted free tier; lower daily token allowance.",
     },

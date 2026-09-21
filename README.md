@@ -134,6 +134,11 @@ provider whose key is in the environment is tried next; `LLM_FALLBACK_BACKENDS`
 sets that order explicitly, or turns it off when empty. The result page names
 the provider that answered.
 
+Holding keys for two providers is worth it. Groq is fast and has the lower
+daily allowance; NVIDIA is slower and has the higher one. With both keys
+present, requests take the fast path until the allowance runs out and then
+keep working.
+
 > **A hosted provider receives your data.** The language model receives the
 > transcript; hosted transcription receives **the audio itself**. Emergency-call
 > recordings contain names, addresses, phone numbers and medical detail, and
