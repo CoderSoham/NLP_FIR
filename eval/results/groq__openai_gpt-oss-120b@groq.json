@@ -2,12 +2,12 @@
   "backend": "groq",
   "model": "openai/gpt-oss-120b @ groq",
   "load_seconds": 0.0,
-  "passed": 82,
-  "total": 84,
+  "passed": 75,
+  "total": 78,
   "rows": [
     {
       "sample": "call_144.mp3",
-      "seconds": 1.8,
+      "seconds": 7.7,
       "checks": {
         "incident_type": {
           "expected": "medical",
@@ -51,38 +51,38 @@
         "injuries": [
           "seizure",
           "non-responsive",
-          "blood from mouth"
+          "bleeding from mouth"
         ],
         "weapons": [],
         "hazards": [],
         "vehicles": [],
         "services_needed": [
-          "ems",
-          "police"
+          "police",
+          "ems"
         ],
         "immediate_actions": [
-          "Dispatch ambulance to the caller's location",
-          "Dispatch deputies to the caller's location"
+          "Dispatch ambulance to the scene",
+          "Dispatch deputies to the scene"
         ],
-        "summary": "Caller reports a female experiencing a seizure, non-responsive but breathing with occasional blood from her mouth, and a male yelling nearby. EMS and police deputies have been dispatched.",
+        "summary": "Caller reports a female experiencing a seizure, non\u2011responsive but breathing with occasional blood from her mouth, and a male also present and yelling. EMS and police units have been dispatched.",
         "uncertainties": [
           "Exact address not provided",
           "Caller name not provided",
           "Callback phone number not provided",
-          "Exact number of people at scene is inferred, not explicitly stated",
-          "Nature of the drug or pill mentioned is unclear"
+          "Exact number of people at scene uncertain",
+          "Specific drug or cause of seizure not identified"
         ]
       },
       "meta": {
         "status": "ok",
         "backend": "groq",
         "model": "openai/gpt-oss-120b @ groq",
-        "seconds": 1.8
+        "seconds": 7.7
       }
     },
     {
       "sample": "call_206.mp3",
-      "seconds": 2.7,
+      "seconds": 17.4,
       "checks": {
         "incident_type": {
           "expected": "accident",
@@ -106,7 +106,7 @@
         },
         "uncertainties_present": {
           "expected": true,
-          "got": 6,
+          "got": 5,
           "pass": true
         },
         "schema_clean": {
@@ -125,9 +125,7 @@
         "people_involved": null,
         "injuries": [],
         "weapons": [],
-        "hazards": [
-          "fog"
-        ],
+        "hazards": [],
         "vehicles": [
           "vehicle"
         ],
@@ -136,30 +134,29 @@
           "ems"
         ],
         "immediate_actions": [
-          "Asked for the address of the emergency",
-          "Asked for the phone number the caller is using",
-          "Confirmed the caller is southbound on I-75 and that help is being dispatched"
+          "Dispatch police assistance",
+          "Dispatch EMS assistance",
+          "Advise caller to stay behind the car"
         ],
-        "summary": "Caller reports hitting a guardrail on I-75 southbound in dense fog, with no injuries reported. Dispatcher is gathering location and contact information and is sending assistance.",
+        "summary": "Caller reports hitting a guardrail on I-75 in dense fog, no injuries reported. Dispatcher is sending police and EMS and instructing the caller to stay behind the vehicle while help arrives.",
         "uncertainties": [
-          "Exact mile marker not provided",
-          "Caller name not clearly identified",
-          "Phone number not provided",
+          "Caller name is unclear (\"Mary Good first\" may be a name)",
+          "Exact mile marker or precise address not provided",
+          "Phone number was requested but not given",
           "Number of people in the vehicle not stated",
-          "Specific type of vehicle not described",
-          "Whether another crash actually occurred behind them is uncertain"
+          "Vehicle type not specified"
         ]
       },
       "meta": {
         "status": "ok",
         "backend": "groq",
         "model": "openai/gpt-oss-120b @ groq",
-        "seconds": 2.7
+        "seconds": 17.4
       }
     },
     {
       "sample": "call_21.mp3",
-      "seconds": 3.1,
+      "seconds": 37.7,
       "checks": {
         "incident_type": {
           "expected": "police",
@@ -178,12 +175,12 @@
         },
         "location": {
           "expected": "24th",
-          "got": "24th Street, Best Auto Wash",
+          "got": "24th Street, across from Mueller Brass",
           "pass": true
         },
         "uncertainties_present": {
           "expected": true,
-          "got": 6,
+          "got": 5,
           "pass": true
         },
         "schema_clean": {
@@ -196,10 +193,10 @@
         "incident_type": "police",
         "severity": "low",
         "is_in_progress": true,
-        "location": "24th Street, Best Auto Wash",
+        "location": "24th Street, across from Mueller Brass",
         "callback_number": null,
         "caller_name": null,
-        "people_involved": null,
+        "people_involved": 2,
         "injuries": [],
         "weapons": [],
         "hazards": [
@@ -212,30 +209,30 @@
           "police"
         ],
         "immediate_actions": [
-          "Attempt to contact the car wash management by phone",
-          "Advise caller to stay inside the vehicle and not attempt to force the doors open",
-          "Dispatch police units to the location to assist with entry"
+          "Ask caller to stay inside the vehicle and remain calm",
+          "Attempt to locate a button on the wall that may open the doors",
+          "Contact the car wash owner/manager using any posted phone number",
+          "Dispatch police units to the location to assist with door entry"
         ],
-        "summary": "Caller is trapped inside a Jeep at the Best Auto Wash on 24th Street because both garage doors are shut and will not open. Police are being dispatched and are attempting to contact the car wash owner while advising the caller to remain inside.",
+        "summary": "Caller is trapped in a self\u2011serve car wash on 24th Street, unable to open the garage doors. Police are being dispatched to assist and the dispatcher is trying to contact the car wash manager.",
         "uncertainties": [
-          "Exact name of the car wash was unclear at first",
-          "Exact street address beyond \"24th Street\" is not provided",
-          "Caller\u2019s personal phone number was not given",
-          "Number of people present (caller, employee, others) is not specified",
-          "Numbers mentioned such as \"92\" and \"586\" are garbled and their meaning is unknown",
-          "Whether a functional door\u2011release button exists on the wall is uncertain"
+          "Exact name of the car wash (caller mentions \"Best Auto Wash\" but is uncertain)",
+          "Precise street address or number (only \"24th Street\" and a nearby business are given)",
+          "Whether any functional door\u2011release button exists",
+          "Number of people present beyond the caller and a possible person behind them",
+          "Exact phone numbers mentioned are garbled (e.g., \"92\", \"586\", \"949-8440\")"
         ]
       },
       "meta": {
         "status": "ok",
         "backend": "groq",
         "model": "openai/gpt-oss-120b @ groq",
-        "seconds": 3.1
+        "seconds": 37.7
       }
     },
     {
       "sample": "call_219.mp3",
-      "seconds": 34.2,
+      "seconds": 16.8,
       "checks": {
         "incident_type": {
           "expected": "accident",
@@ -244,7 +241,7 @@
         },
         "severity": {
           "expected": "<= critical",
-          "got": "unknown",
+          "got": "low",
           "pass": true
         },
         "weapons": {
@@ -254,7 +251,79 @@
         },
         "location": {
           "expected": "County Road",
-          "got": "corner of 119 and County Road 1; 1640 Bluefield",
+          "got": "corner of 119 and County Road 1",
+          "pass": true
+        },
+        "uncertainties_present": {
+          "expected": true,
+          "got": 5,
+          "pass": true
+        },
+        "schema_clean": {
+          "expected": "no rejected fields",
+          "got": null,
+          "pass": true
+        }
+      },
+      "record": {
+        "incident_type": "accident",
+        "severity": "low",
+        "is_in_progress": false,
+        "location": "corner of 119 and County Road 1",
+        "callback_number": null,
+        "caller_name": "Sabrina",
+        "people_involved": null,
+        "injuries": [],
+        "weapons": [],
+        "hazards": [],
+        "vehicles": [
+          "plane"
+        ],
+        "services_needed": [],
+        "immediate_actions": [
+          "Dispatch units to the reported crash site and proceed there."
+        ],
+        "summary": "Caller reports a small white plane crashed at the corner of 119 and County Road 1, with no visible smoke or flames. No injuries or hazards were reported.",
+        "uncertainties": [
+          "No phone number was provided by the caller.",
+          "The exact location is ambiguous; later statements mention three miles south of Union Reservoir and 1640 Bluefield.",
+          "Number of people at the scene is not stated.",
+          "No injuries were confirmed; the caller may not have seen the crash site directly.",
+          "Services needed were not explicitly requested by the caller."
+        ]
+      },
+      "meta": {
+        "status": "ok",
+        "backend": "groq",
+        "model": "openai/gpt-oss-120b @ groq",
+        "seconds": 16.8
+      }
+    },
+    {
+      "sample": "call_225.mp3",
+      "seconds": 20.4,
+      "checks": {
+        "incident_type": {
+          "expected": "police",
+          "got": "police",
+          "pass": true
+        },
+        "severity": {
+          "expected": "<= critical",
+          "got": "medium",
+          "pass": true
+        },
+        "weapons": {
+          "expected": true,
+          "got": [
+            "gun",
+            "axe"
+          ],
+          "pass": true
+        },
+        "location": {
+          "expected": null,
+          "got": null,
           "pass": true
         },
         "uncertainties_present": {
@@ -269,96 +338,25 @@
         }
       },
       "record": {
-        "incident_type": "accident",
-        "severity": "unknown",
-        "is_in_progress": false,
-        "location": "corner of 119 and County Road 1; 1640 Bluefield",
-        "callback_number": null,
-        "caller_name": "Sabrina",
-        "people_involved": null,
-        "injuries": [],
-        "weapons": [],
-        "hazards": [],
-        "vehicles": [
-          "plane"
-        ],
-        "services_needed": [],
-        "immediate_actions": [
-          "dispatcher acknowledged the report and indicated units are en route"
-        ],
-        "summary": "Caller reported a small white plane crashed near the corner of 119 and County Road 1, also mentioning being at 1640 Bluefield. No smoke or flames observed, and no injuries were reported.",
-        "uncertainties": [
-          "Conflicting location information (corner of 119 and County Road 1 vs 1640 Bluefield vs three miles south of Union Reservoir)",
-          "Caller\u2019s phone number was not provided",
-          "Number of people involved and any injuries are unknown",
-          "Exact type of aircraft is unclear due to garbled description"
-        ]
-      },
-      "meta": {
-        "status": "ok",
-        "backend": "groq",
-        "model": "openai/gpt-oss-120b @ groq",
-        "seconds": 34.2
-      }
-    },
-    {
-      "sample": "call_225.mp3",
-      "seconds": 18.3,
-      "checks": {
-        "incident_type": {
-          "expected": "police",
-          "got": "police",
-          "pass": true
-        },
-        "severity": {
-          "expected": "<= critical",
-          "got": "high",
-          "pass": true
-        },
-        "weapons": {
-          "expected": true,
-          "got": [
-            "axe",
-            "gun"
-          ],
-          "pass": true
-        },
-        "location": {
-          "expected": null,
-          "got": null,
-          "pass": true
-        },
-        "uncertainties_present": {
-          "expected": true,
-          "got": 5,
-          "pass": true
-        },
-        "schema_clean": {
-          "expected": "no rejected fields",
-          "got": null,
-          "pass": true
-        }
-      },
-      "record": {
         "incident_type": "police",
-        "severity": "high",
+        "severity": "medium",
         "is_in_progress": false,
         "location": null,
         "callback_number": null,
         "caller_name": "Desiree Stapler-Fenny",
         "people_involved": 3,
         "injuries": [
-          "I put too much pressure on my leg",
-          "he kind of beat me up"
+          "leg pressure / unable to walk",
+          "beaten"
         ],
         "weapons": [
           {
-            "item": "axe",
-            "quote": "the axe is in Jake's head"
-          },
-          {
             "item": "gun",
             "quote": "the gun is in Brian's hand"
+          },
+          {
+            "item": "axe",
+            "quote": "the axe is in Jake's head"
           }
         ],
         "hazards": [],
@@ -370,28 +368,27 @@
         "immediate_actions": [
           "Stay on the line with the caller",
           "Do not touch anything at the scene",
-          "Have the caller move to the porch",
+          "Instruct caller to move to the porch",
           "Dispatch police and EMS to the address"
         ],
-        "summary": "Caller reports that her ex\u2011boyfriend broke into her house, killed her current boyfriend, then shot himself. The caller is alive but injured her leg and was beaten. Police and EMS are needed at the residence.",
+        "summary": "Caller reports her ex\u2011boyfriend broke into the house, killed her current boyfriend, then shot himself. The caller is alive but injured her leg and was beaten, and weapons (a gun and an axe) are present at the scene.",
         "uncertainties": [
-          "Exact street address of the house was not provided",
-          "Caller\u2019s phone number was not given",
-          "Unclear if any other people are present at the scene",
-          "Severity of the leg injury is not described",
-          "Confirmation of the ex\u2011boyfriend\u2019s identity beyond the name provided"
+          "Exact address of the house is not provided",
+          "Caller phone number is not given",
+          "Severity of the leg injury is unclear",
+          "First line of transcript is garbled and may contain irrelevant data"
         ]
       },
       "meta": {
         "status": "ok",
         "backend": "groq",
         "model": "openai/gpt-oss-120b @ groq",
-        "seconds": 18.3
+        "seconds": 20.4
       }
     },
     {
       "sample": "call_24.mp3",
-      "seconds": 34.0,
+      "seconds": 17.7,
       "checks": {
         "incident_type": {
           "expected": "police",
@@ -406,171 +403,116 @@
         "weapons": {
           "expected": true,
           "got": [
-            "handgun (.22 caliber)",
-            "revolver",
-            "gun"
+            "handgun"
           ],
           "pass": true
         },
         "location": {
           "expected": "Bannister",
-          "got": "1331 East Bannister",
+          "got": "1331 East Bannister Road",
           "pass": true
         },
         "uncertainties_present": {
           "expected": true,
-          "got": 5,
+          "got": 6,
           "pass": true
         },
         "schema_clean": {
           "expected": "no rejected fields",
-          "got": null,
-          "pass": true
+          "got": {
+            "weapons": [
+              {
+                "item": "revolver",
+                "quote": "revolver",
+                "reason": "quote not found in transcript"
+              }
+            ]
+          },
+          "pass": false
         }
       },
       "record": {
         "incident_type": "police",
         "severity": "high",
         "is_in_progress": true,
-        "location": "1331 East Bannister",
+        "location": "1331 East Bannister Road",
         "callback_number": null,
         "caller_name": null,
         "people_involved": null,
         "injuries": [
-          "gunshot wound to right arm"
+          "Gunshot wound to right arm"
         ],
         "weapons": [
           {
-            "item": "handgun (.22 caliber)",
-            "quote": "it looked like a high standard .22"
-          },
-          {
-            "item": "revolver",
-            "quote": "then he pulled a revolver on me"
-          },
-          {
-            "item": "gun",
-            "quote": "He might be armed with another gun"
+            "item": "handgun",
+            "quote": "high standard .22"
           }
         ],
         "hazards": [],
         "vehicles": [
           "maroon Oldsmobile",
-          "92 Old Cutlass Sierra, Maroon Color",
-          "red automobile"
+          "red automobile",
+          "92 Old Cutlass Sierra"
         ],
         "services_needed": [
           "police",
           "ems"
         ],
         "immediate_actions": [
-          "request additional police units (two more cars)",
-          "establish a cordon at Bannister and Lydia",
-          "deploy K9 unit",
-          "cut off parking lot access to Valero station",
-          "broadcast suspect description and vehicle information"
+          "Request additional patrol cars",
+          "Establish perimeter and cordon off area",
+          "Deploy K\u20119 unit",
+          "Broadcast suspect description and vehicle information",
+          "Seal off street at Bannister and Lydia"
         ],
-        "summary": "An officer has been shot in the right arm during a suspect confrontation near 1331 East Bannister. The suspect, a white male in his 50s, may still be armed and is believed to be in a maroon Oldsmobile.",
+        "summary": "An officer has been shot in the right arm during a suspect confrontation near 1331 East Bannister Road. The suspect, a white male in his 50s, is believed to be armed with a .22 handgun and a revolver and may still be in a maroon Oldsmobile. Police are requesting additional units, establishing a perimeter, and deploying K\u20119 support.",
         "uncertainties": [
-          "Exact number of people present at the scene is unclear",
-          "Whether the suspect is still armed or has left the vehicle is not confirmed",
-          "Precise location details beyond \"1331 East Bannister\" are garbled",
-          "The status of the suspect's vehicle (location, whether it was abandoned) is ambiguous",
-          "Caller identity and callback number are not provided"
-        ]
+          "Exact address beyond '1331 East Bannister Road' is unclear",
+          "Number of people at the scene is not specified",
+          "Whether the suspect is still armed or in a vehicle is uncertain",
+          "Exact license plate/tag number was not confirmed",
+          "Caller identity and phone number were not provided",
+          "Many portions of the transcript are garbled and unintelligible"
+        ],
+        "_rejected": {
+          "weapons": [
+            {
+              "item": "revolver",
+              "quote": "revolver",
+              "reason": "quote not found in transcript"
+            }
+          ]
+        }
       },
       "meta": {
         "status": "ok",
         "backend": "groq",
         "model": "openai/gpt-oss-120b @ groq",
-        "seconds": 34.0
+        "seconds": 17.7
       }
     },
     {
       "sample": "call_456.mp3",
-      "seconds": 4.1,
-      "checks": {
-        "incident_type": {
-          "expected": "police",
-          "got": "police",
-          "pass": true
-        },
-        "severity": {
-          "expected": "<= critical",
-          "got": "critical",
-          "pass": true
-        },
-        "weapons": {
-          "expected": true,
-          "got": [
-            "gun"
-          ],
-          "pass": true
-        },
-        "location": {
-          "expected": "Alameda",
-          "got": "1109 East Alameda",
-          "pass": true
-        },
-        "uncertainties_present": {
-          "expected": true,
-          "got": 5,
-          "pass": true
-        },
-        "schema_clean": {
-          "expected": "no rejected fields",
-          "got": null,
-          "pass": true
-        }
-      },
-      "record": {
-        "incident_type": "police",
-        "severity": "critical",
-        "is_in_progress": true,
-        "location": "1109 East Alameda",
-        "callback_number": "970-209-6887",
-        "caller_name": "Edwin Waters",
-        "people_involved": 3,
-        "injuries": [
-          "hurt bad",
-          "down"
-        ],
-        "weapons": [
-          {
-            "item": "gun",
-            "quote": "I just shot a man attacking me"
-          }
-        ],
-        "hazards": [],
-        "vehicles": [],
-        "services_needed": [
-          "police",
-          "ems"
-        ],
-        "immediate_actions": [
-          "Dispatch police to 1109 East Alameda",
-          "Dispatch EMS to 1109 East Alameda",
-          "Advise caller to stay calm and keep distance from the victim"
-        ],
-        "summary": "Caller reports a shooting at 1109 East Alameda. The victim is down and badly injured; the shooter, Edwin Waters, is present with a gun on a table. Police and EMS are en route.",
-        "uncertainties": [
-          "Exact condition of the victim (breathing, consciousness) is unknown",
-          "Whether the gun is still present at the scene; caller says it is on the table but not confirmed",
-          "Exact number of people at the scene beyond the shooter, victim, and brother is unclear",
-          "Initial confusion about address direction (West vs East) before verification",
-          "Victim's age is an estimate"
-        ]
-      },
-      "meta": {
-        "status": "ok",
+      "error": {
+        "status": "failed",
         "backend": "groq",
-        "model": "openai/gpt-oss-120b @ groq",
-        "seconds": 4.1
+        "reason": "HTTP 429 from groq: {\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m2xgg3n3eeyrg5d73s84hhfh` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6690, Requested 2928. Please try again in 12.135s. Need more tokens? Upgrade to Dev Tier ",
+        "seconds": 30.6,
+        "attempts": [
+          {
+            "backend": "groq",
+            "error": "HTTP 429 from groq: {\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m2xgg3n3eeyrg5d73s84hhfh` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6690, Requested 2928. Please try again in 12.135s. Need more tokens? Upgrade to Dev Tier "
+          },
+          {
+            "backend": "nvidia",
+            "error": "HTTP 410 from nvidia: {\"type\":\"about:blank\",\"title\":\"Gone\",\"status\":410,\"detail\":\"The model 'openai/gpt-oss-120b' has reached its end of life on 2026-09-03T08:00:00Z and is no longer available.\"}\n"
+          }
+        ]
       }
     },
     {
       "sample": "call_56.mp3",
-      "seconds": 33.7,
+      "seconds": 18.1,
       "checks": {
         "incident_type": {
           "expected": "police",
@@ -619,30 +561,31 @@
           "police"
         ],
         "immediate_actions": [
-          "Confirm address (1160 Ray Road)",
-          "Obtain child's description and clothing (pink pajamas)",
-          "Record last known time (just after 11:30\u202fpm last night)",
-          "Dispatch police units to the location"
+          "Confirm the address (1160 Ray Road)",
+          "Obtain the caller's name and contact information",
+          "Gather details about the missing infant (age, last seen time, clothing)",
+          "Dispatch police units to the location immediately",
+          "Advise the caller to keep the bedroom window closed and remain on the line until officers arrive"
         ],
-        "summary": "Caller reports an 11\u2011month\u2011old baby missing from her crib at 1160 Ray Road. Mother, last name Irizarry, says the child was last seen wearing pink pajamas around 11:30\u202fpm last night and the bedroom window is open. Police are being dispatched to locate the child.",
+        "summary": "Caller reports an 11\u2011month\u2011old baby missing from her crib at 1160 Ray Road. Mother Michelle Irizarry says the infant was last seen wearing pink pajamas around 11:30\u202fpm last night and the bedroom window is open. Police are being dispatched to locate the child.",
         "uncertainties": [
-          "Caller did not provide a phone number",
-          "Address confusion with a mention of 1680 that was not clarified",
-          "Father's name and exact presence at the scene are unclear",
-          "The statement \"She\u2019s laying to someone in Rondo Lake\" is garbled and its meaning is unknown",
-          "Exact number of people present at the scene is inferred, not explicitly stated"
+          "Phone number was requested but not provided",
+          "Dispatcher repeated an address of 1680, creating ambiguity about the correct location",
+          "The phrase \"My daughter\" appears without clarification of who is speaking",
+          "The statement \"She's laying to someone in Rondo Lake\" is garbled and its meaning is unclear",
+          "The comment \"father just got home from our act\" is unintelligible"
         ]
       },
       "meta": {
         "status": "ok",
         "backend": "groq",
         "model": "openai/gpt-oss-120b @ groq",
-        "seconds": 33.7
+        "seconds": 18.1
       }
     },
     {
       "sample": "call_572.mp3",
-      "seconds": 18.3,
+      "seconds": 9.5,
       "checks": {
         "incident_type": {
           "expected": "police",
@@ -657,6 +600,7 @@
         "weapons": {
           "expected": true,
           "got": [
+            "firearm",
             "firearm"
           ],
           "pass": true
@@ -686,14 +630,18 @@
         "caller_name": null,
         "people_involved": null,
         "injuries": [
-          "daughter shot in the head, bleeding from mouth",
-          "husband shot",
-          "caller shot themselves"
+          "daughter shot in the head and bleeding from her mouth",
+          "husband shot (condition unspecified)",
+          "caller shot herself"
         ],
         "weapons": [
           {
             "item": "firearm",
             "quote": "somebody just came in and shot my daughter and my husband"
+          },
+          {
+            "item": "firearm",
+            "quote": "I've been shot myself"
           }
         ],
         "hazards": [],
@@ -705,26 +653,26 @@
         "immediate_actions": [
           "Dispatch police units to the scene",
           "Dispatch EMS to the scene",
-          "Instruct caller to stay on the line and not move the victims"
+          "Instruct caller to stay where she is and keep victims still"
         ],
-        "summary": "Caller reports that an unknown assailant shot her daughter (age 10) in the head and her husband, and the caller herself was also shot. The shooters are reportedly returning to the location, so police and EMS are needed immediately.",
+        "summary": "Caller reports that an unknown shooter entered the home and shot her daughter (head wound, bleeding from mouth), her husband, and herself. The shooter(s) are reportedly returning to the scene, and the victims are critically injured.",
         "uncertainties": [
           "Exact location/address not provided",
           "Caller name not given",
-          "Number of assailants not specified",
-          "Callback phone number not provided"
+          "Number of shooters and total people present not specified",
+          "Phone number for callback not given"
         ]
       },
       "meta": {
         "status": "ok",
         "backend": "groq",
         "model": "openai/gpt-oss-120b @ groq",
-        "seconds": 18.3
+        "seconds": 9.5
       }
     },
     {
       "sample": "call_589.mp3",
-      "seconds": 17.8,
+      "seconds": 16.9,
       "checks": {
         "incident_type": {
           "expected": "medical",
@@ -743,8 +691,8 @@
         },
         "location": {
           "expected": null,
-          "got": "my neighbor's house",
-          "pass": false
+          "got": null,
+          "pass": true
         },
         "uncertainties_present": {
           "expected": true,
@@ -761,14 +709,13 @@
         "incident_type": "medical",
         "severity": "critical",
         "is_in_progress": true,
-        "location": "my neighbor's house",
+        "location": null,
         "callback_number": null,
         "caller_name": "Jolene Harvey",
         "people_involved": 2,
         "injuries": [
           "not breathing",
-          "cold",
-          "stiff"
+          "cold and stiff"
         ],
         "weapons": [],
         "hazards": [],
@@ -777,28 +724,28 @@
           "ems"
         ],
         "immediate_actions": [
-          "Dispatch EMS to the neighbor's house",
-          "Instruct caller to continue CPR"
+          "Dispatch EMS to the caller's location",
+          "Ask caller to sit down before dispatch"
         ],
-        "summary": "Caller Jolene Harvey reports a 60\u2011year\u2011old male who is not breathing, cold and stiff at her neighbor\u2019s house. She has attempted CPR without success and needs emergency medical assistance. EMS dispatched.",
+        "summary": "Caller reports a 60\u2011year\u2011old male who is not breathing, cold and stiff despite attempted CPR. EMS units are being dispatched to the caller\u2019s location.",
         "uncertainties": [
-          "Exact address of the neighbor's house is not provided",
-          "No callback phone number was given",
-          "Patient's name and cause of condition are unknown",
-          "Portions of the transcript are incoherent (e.g., references to \"gang area\" and \"lymphoma\")",
-          "It is unclear whether police assistance is required"
+          "Exact address of the incident is not provided",
+          "Callback phone number not provided",
+          "Whether the patient is still alive is unclear",
+          "Number of additional people at the scene is not specified",
+          "Any weapons or hazards present are not mentioned"
         ]
       },
       "meta": {
         "status": "ok",
         "backend": "groq",
         "model": "openai/gpt-oss-120b @ groq",
-        "seconds": 17.8
+        "seconds": 16.9
       }
     },
     {
       "sample": "call_645.mp3",
-      "seconds": 33.5,
+      "seconds": 17.4,
       "checks": {
         "incident_type": {
           "expected": "police",
@@ -822,7 +769,7 @@
         },
         "uncertainties_present": {
           "expected": true,
-          "got": 5,
+          "got": 6,
           "pass": true
         },
         "schema_clean": {
@@ -847,28 +794,31 @@
           "police"
         ],
         "immediate_actions": [
-          "Keep the caller on the line and gather any additional information",
-          "Dispatch police units to Lake Robert Slandering, Winter Garden immediately"
+          "Keep the caller on the line and reassure them.",
+          "Dispatch police units to Lake Robert Slandering, Winter Garden immediately.",
+          "Gather any additional details about the suspects (description, number, direction of travel) if the caller can provide them.",
+          "Advise the caller not to approach the suspects or the bound victim."
         ],
-        "summary": "Caller reports a burglary at Lake Robert Slandering in Winter Garden. A victim is bound with her feet tied and suspects appear to still be present. Police are needed urgently.",
+        "summary": "Caller reports a burglary at Lake Robert Slandering in Winter Garden. The victim is bound with her feet tied and suspects may still be present. Police response is required immediately.",
         "uncertainties": [
-          "Exact street address is not provided, only a place name",
-          "Number and description of suspects are unclear",
-          "Victim's medical condition beyond being bound is not described",
-          "Caller name and callback number are not given",
-          "Potential garbling of the location name \"Lake Robert Slandering\""
+          "Exact street address is not provided, only a place name.",
+          "Number of suspects and their exact descriptions are unclear.",
+          "The gender of the victim is uncertain (caller asks \"Is she a female?\").",
+          "No information on any injuries to the victim beyond being bound.",
+          "No weapons are mentioned; it is unknown if any are present.",
+          "Whether any vehicles are on the scene is not established."
         ]
       },
       "meta": {
         "status": "ok",
         "backend": "groq",
         "model": "openai/gpt-oss-120b @ groq",
-        "seconds": 33.5
+        "seconds": 17.4
       }
     },
     {
       "sample": "call_696.mp3",
-      "seconds": 9.3,
+      "seconds": 34.5,
       "checks": {
         "incident_type": {
           "expected": "police",
@@ -883,6 +833,7 @@
         "weapons": {
           "expected": true,
           "got": [
+            "firearm",
             "firearm"
           ],
           "pass": true
@@ -894,7 +845,7 @@
         },
         "uncertainties_present": {
           "expected": true,
-          "got": 7,
+          "got": 5,
           "pass": true
         },
         "schema_clean": {
@@ -916,38 +867,42 @@
           {
             "item": "firearm",
             "quote": "they're shooting out there"
+          },
+          {
+            "item": "firearm",
+            "quote": "Did somebody shot up the car? They shoot up the car"
           }
         ],
         "hazards": [],
-        "vehicles": [],
+        "vehicles": [
+          "car"
+        ],
         "services_needed": [
           "police"
         ],
         "immediate_actions": [
-          "Tell caller to stay inside and not approach the shooting",
-          "Dispatch police units to Dennis' Road Drive"
+          "Advised caller not to go outside",
+          "Dispatched police units to the location"
         ],
-        "summary": "Caller reports hearing gunfire near a pool hall on Dennis' Road Drive and is scared to go outside. Police are needed to respond to the possible shooting.",
+        "summary": "Caller reports hearing shooting near a pool hall on Dennis' Road Drive and is scared to go outside. No confirmed injuries or victims were identified. Police are being dispatched.",
         "uncertainties": [
-          "Exact address beyond \"Dennis' Road Drive\" is unclear",
-          "Whether any injuries have occurred",
+          "Exact address details are unclear (pool hall vs road)",
           "Number of people involved is not stated",
-          "Only the word \"shooting\" is mentioned, no specific weapon type identified",
-          "Caller\u2019s name and phone number are not provided",
-          "It is uncertain if a car was actually shot",
-          "Location of the club/pool hall relative to the address is ambiguous"
+          "No confirmation of injuries or victims",
+          "Identity of shooter is unknown",
+          "ASR errors may affect exact wording"
         ]
       },
       "meta": {
         "status": "ok",
         "backend": "groq",
         "model": "openai/gpt-oss-120b @ groq",
-        "seconds": 9.3
+        "seconds": 34.5
       }
     },
     {
       "sample": "call_9.mp3",
-      "seconds": 33.5,
+      "seconds": 9.7,
       "checks": {
         "incident_type": {
           "expected": "police",
@@ -971,7 +926,7 @@
         },
         "uncertainties_present": {
           "expected": true,
-          "got": 4,
+          "got": 5,
           "pass": true
         },
         "schema_clean": {
@@ -998,24 +953,25 @@
         "immediate_actions": [
           "Dispatch police officers to 7th Street Court"
         ],
-        "summary": "Caller reports two teenage daughters fighting at 7th Street Court, with the 12\u2011year\u2011old out of control and a hole kicked in a door. Police are being dispatched to the scene.",
+        "summary": "Caller reports two teenage daughters fighting, one out of control, at 7th Street Court and requests police assistance. Dispatcher will send police to the location.",
         "uncertainties": [
-          "Caller\u2019s full phone number is incomplete (only \"605\" provided)",
-          "Exact ages of the daughters are unclear, with conflicting statements (12, 13.5, 14)",
-          "No injuries were described, so injury status is unknown",
-          "Location lacks city or additional address details"
+          "Caller\u2019s full phone number is not fully provided; only \"605\" mentioned",
+          "Exact ages of the daughters are unclear (12 and almost 14, later 12 and 13.5)",
+          "Whether the physical fight is still occurring at the moment of the call is not explicitly confirmed",
+          "No injuries were described, so injury status is uncertain",
+          "No weapon presence confirmed"
         ]
       },
       "meta": {
         "status": "ok",
         "backend": "groq",
         "model": "openai/gpt-oss-120b @ groq",
-        "seconds": 33.5
+        "seconds": 9.7
       }
     },
     {
       "sample": "call_93.mp3",
-      "seconds": 9.0,
+      "seconds": 17.7,
       "checks": {
         "incident_type": {
           "expected": "medical",
@@ -1029,8 +985,10 @@
         },
         "weapons": {
           "expected": false,
-          "got": [],
-          "pass": true
+          "got": [
+            "firearm"
+          ],
+          "pass": false
         },
         "location": {
           "expected": "52",
@@ -1039,7 +997,7 @@
         },
         "uncertainties_present": {
           "expected": true,
-          "got": 6,
+          "got": 5,
           "pass": true
         },
         "schema_clean": {
@@ -1057,10 +1015,16 @@
         "caller_name": null,
         "people_involved": 2,
         "injuries": [
+          "gunshot wound",
           "choking",
           "not breathing"
         ],
-        "weapons": [],
+        "weapons": [
+          {
+            "item": "firearm",
+            "quote": "my girlfriend shot me!"
+          }
+        ],
         "hazards": [],
         "vehicles": [],
         "services_needed": [
@@ -1068,24 +1032,23 @@
           "ems"
         ],
         "immediate_actions": [
-          "Dispatch EMS with Heimlich maneuver",
-          "Advise caller to perform Heimlich maneuver"
+          "Dispatch EMS with Heimlich maneuver assistance",
+          "Dispatch police unit"
         ],
-        "summary": "Caller reports girlfriend is choking and not breathing on the kitchen floor. Dispatcher is sending EMS for a Heimlich maneuver and has notified police.",
+        "summary": "Caller reports his girlfriend is choking and not breathing on the kitchen floor, and also claims she shot him. Dispatcher is sending EMS for a Heimlich maneuver and police to the address provided.",
         "uncertainties": [
-          "Address string may be garbled or incomplete",
-          "Phone number may be missing area code",
-          "Caller name not provided",
-          "Initial claim of a shooting is contradictory and unverified",
-          "Exact location (bathroom vs kitchen floor) is unclear",
-          "Number of people at scene is inferred, not explicitly stated"
+          "Address format \"52-10-5-1\" may be garbled or incomplete",
+          "Phone number may be missing digits or area code",
+          "Caller\u2019s name was not provided",
+          "Contradictory statements about a gunshot wound versus choking",
+          "Exact object causing the choking was not identified"
         ]
       },
       "meta": {
         "status": "ok",
         "backend": "groq",
         "model": "openai/gpt-oss-120b @ groq",
-        "seconds": 9.0
+        "seconds": 17.7
       }
     }
   ]

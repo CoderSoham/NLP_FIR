@@ -363,7 +363,8 @@ def test_a_rate_limited_primary_falls_over_to_the_next_provider(monkeypatch):
     primary, alt = _Fallible("nvidia", failures=1), _Fallible("groq")
     monkeypatch.setattr(llm, "get_backend", lambda: primary)
     monkeypatch.setattr(llm, "fallback_backends", lambda _p: ["groq"])
-    monkeypatch.setattr(llm, "OpenAICompatibleBackend", lambda _n: alt)
+    monkeypatch.setattr(llm, "OpenAICompatibleBackend",
+                        lambda _n, primary=True: alt)
 
     record, meta = extract_incident("There is a fire.")
 
@@ -378,7 +379,8 @@ def test_a_working_primary_is_not_retried_elsewhere(monkeypatch):
     primary, alt = _Fallible("nvidia"), _Fallible("groq")
     monkeypatch.setattr(llm, "get_backend", lambda: primary)
     monkeypatch.setattr(llm, "fallback_backends", lambda _p: ["groq"])
-    monkeypatch.setattr(llm, "OpenAICompatibleBackend", lambda _n: alt)
+    monkeypatch.setattr(llm, "OpenAICompatibleBackend",
+                        lambda _n, primary=True: alt)
 
     _record, meta = extract_incident("There is a fire.")
 
@@ -390,7 +392,8 @@ def test_every_provider_failing_reports_the_primary_reason(monkeypatch):
     primary, alt = _Fallible("nvidia", failures=9), _Fallible("groq", failures=9)
     monkeypatch.setattr(llm, "get_backend", lambda: primary)
     monkeypatch.setattr(llm, "fallback_backends", lambda _p: ["groq"])
-    monkeypatch.setattr(llm, "OpenAICompatibleBackend", lambda _n: alt)
+    monkeypatch.setattr(llm, "OpenAICompatibleBackend",
+                        lambda _n, primary=True: alt)
 
     record, meta = extract_incident("There is a fire.")
 
@@ -408,7 +411,8 @@ def test_a_local_backend_does_not_fall_over(monkeypatch):
     alt = _Fallible("groq")
     monkeypatch.setattr(llm, "get_backend", lambda: local)
     monkeypatch.setattr(llm, "fallback_backends", lambda _p: ["groq"])
-    monkeypatch.setattr(llm, "OpenAICompatibleBackend", lambda _n: alt)
+    monkeypatch.setattr(llm, "OpenAICompatibleBackend",
+                        lambda _n, primary=True: alt)
 
     record, meta = extract_incident("There is a fire.")
 

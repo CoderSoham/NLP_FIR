@@ -228,3 +228,49 @@ def test_the_eval_model_flag_targets_the_right_backend():
     assert model_env("local") == "LOCAL_LLM_MODEL"
     for hosted in ("groq", "nvidia", "openrouter", "cerebras", "anthropic"):
         assert model_env(hosted) == "LLM_MODEL"
+
+
+# ---- a model id belongs to one provider ------------------------------------
+
+def test_the_global_model_override_applies_to_the_chosen_backend(monkeypatch):
+    monkeypatch.setenv("LLM_MODEL", "openai/gpt-oss-120b")
+    assert llm_providers.resolve("groq")["model"] == "openai/gpt-oss-120b"
+
+
+def test_the_global_override_does_not_follow_a_failover(monkeypatch):
+    """Observed live: a 429 from Groq fell over to NVIDIA carrying Groq's
+    model id, so the fallback that exists to keep the request alive asked for
+    a model NVIDIA does not serve."""
+    monkeypatch.setenv("LLM_MODEL", "openai/gpt-oss-120b")
+    fallback = llm_providers.resolve("nvidia", primary=False)
+    assert fallback["model"] == llm_providers.PROVIDERS["nvidia"]["default_model"]
+
+
+def test_the_global_base_url_does_not_follow_a_failover_either(monkeypatch):
+    """Worse than the model: it would send NVIDIA's key to Groq's endpoint."""
+    monkeypatch.setenv("LLM_BASE_URL", "http://localhost:11434/v1")
+    assert llm_providers.resolve("nvidia", primary=False)["base_url"] == \
+        llm_providers.PROVIDERS["nvidia"]["base_url"]
+    assert llm_providers.resolve("nvidia")["base_url"] == "http://localhost:11434/v1"
+
+
+def test_a_provider_specific_override_is_honoured_even_on_a_failover(monkeypatch):
+    """Naming the provider in the variable is saying which one you meant."""
+    monkeypatch.setenv("LLM_MODEL", "openai/gpt-oss-120b")
+    monkeypatch.setenv("LLM_MODEL_NVIDIA", "nvidia/nemotron-3-super-120b-a12b")
+    assert llm_providers.resolve("nvidia", primary=False)["model"] == \
+        "nvidia/nemotron-3-super-120b-a12b"
+
+
+def test_a_provider_specific_override_beats_the_global_one(monkeypatch):
+    monkeypatch.setenv("LLM_MODEL", "global-model")
+    monkeypatch.setenv("LLM_MODEL_GROQ", "specific-model")
+    assert llm_providers.resolve("groq")["model"] == "specific-model"
+
+
+def test_the_fallback_backend_is_constructed_as_a_fallback(monkeypatch):
+    """The end-to-end version: the wiring, not just resolve()."""
+    monkeypatch.setenv("LLM_MODEL", "openai/gpt-oss-120b")
+    monkeypatch.setenv("NVIDIA_API_KEY", "key")
+    backend = llm.OpenAICompatibleBackend("nvidia", primary=False)
+    assert "gpt-oss" not in backend.describe()

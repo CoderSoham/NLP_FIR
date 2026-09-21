@@ -403,8 +403,8 @@ class OpenAICompatibleBackend:
     quantised model runs on a GPU that `bitsandbytes` will not support.
     """
 
-    def __init__(self, provider):
-        self.cfg = llm_providers.resolve(provider)
+    def __init__(self, provider, primary=True):
+        self.cfg = llm_providers.resolve(provider, primary=primary)
         self.name = provider
         # ollama and llama.cpp speak the same protocol but hold their own VRAM
         # on this machine, so they are not "hosted" for scheduling purposes.
@@ -539,7 +539,10 @@ def extract_incident(transcript, **context):
     if record is None and getattr(backend, "is_hosted", False):
         for name in fallback_backends(backend.name):
             try:
-                alt = OpenAICompatibleBackend(name)
+                # primary=False: this provider was not chosen, it was reached
+                # for. It uses its own default model unless a
+                # provider-specific override names it.
+                alt = OpenAICompatibleBackend(name, primary=False)
             except LLMUnavailable as exc:
                 attempts.append({"backend": name, "error": str(exc)})
                 continue

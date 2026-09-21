@@ -214,10 +214,24 @@ def load_severity_classifier():
         SEVERITY_CLASSIFIER = load_emergency_classifier()
     return SEVERITY_CLASSIFIER
 
+# Everything this pipeline asks spaCy for is `doc.ents`. The tagger, parser,
+# attribute ruler and lemmatiser contribute nothing to that -- in spaCy v3 the
+# NER component depends on tok2vec alone -- and they are most of the cost.
+#
+# `exclude`, not `disable`: disable still loads the component and merely skips
+# running it, which pays the load cost on every process for nothing. And
+# `textcat` was named in the old disable list but is not in this pipeline at
+# all, so that entry did nothing whatsoever.
+#
+# Verified byte-identical on all fourteen evaluation transcripts: same spans,
+# same labels, same offsets, 1.9x faster.
+NER_EXCLUDE = ["tagger", "parser", "attribute_ruler", "lemmatizer"]
+
+
 def load_ner_model():
     global NER_MODEL
     if NER_MODEL is None:
-        NER_MODEL = spacy.load("en_core_web_sm", disable=['parser', 'textcat'])
+        NER_MODEL = spacy.load("en_core_web_sm", exclude=NER_EXCLUDE)
     return NER_MODEL
 
 def load_sentence_model():
@@ -604,9 +618,6 @@ def process_audio_file(input_path, output_folder, progress=None):
 
         # Generate visualizations from what was actually transcribed, not from
         # the raw file, so the plots describe the analysed signal.
-        say("Drawing waveform and spectrum")
-        plots = generate_visualizations(audio, sr, output_folder, report_id)
-
         # faster-whisper takes the array directly, so the intermediate WAV that
         # every request used to write and delete is gone.
         # transcribe_file, not the array-level call: it honours ASR_BACKEND and
@@ -646,6 +657,13 @@ def process_audio_file(input_path, output_folder, progress=None):
                 extract_incident, translated_text, truncated=truncated,
                 source_seconds=source_duration,
                 analysed_seconds=analysed_duration)
+
+        # Drawn after the fork rather than before transcription, so the wait
+        # on the extraction model pays for them. They depend only on the
+        # cleaned audio, which has existed since two stages ago -- the old
+        # position was habit, not a dependency.
+        say("Drawing waveform and spectrum")
+        plots = generate_visualizations(audio, sr, output_folder, report_id)
 
         # Named entities first -- severity weights them, so they have to exist
         # before it runs. Previously severity was called with a hardcoded []

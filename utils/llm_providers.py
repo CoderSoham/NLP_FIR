@@ -94,14 +94,34 @@ PROVIDERS = {
 }
 
 
-def resolve(name):
-    """Return the provider config, with env overrides applied."""
+def resolve(name, primary=True):
+    """Return the provider config, with env overrides applied.
+
+    `LLM_MODEL` and `LLM_BASE_URL` describe the backend the operator chose.
+    They do **not** describe whichever provider a rate limit sends the request
+    to next -- a model id belongs to one provider, and pointing NVIDIA at
+    `openai/gpt-oss-120b` because Groq was busy asks for a model NVIDIA does
+    not serve. Observed exactly that way: a 429 from Groq fell over to NVIDIA
+    carrying Groq's model id, so the fallback that exists to keep the request
+    alive could not have worked.
+
+    `primary=False` therefore ignores both globals. A provider-specific
+    override is still honoured, because naming the provider in the variable
+    is saying which one you meant:
+
+        LLM_MODEL_NVIDIA=nvidia/nemotron-3-ultra-550b-a55b
+    """
     if name not in PROVIDERS:
         raise KeyError(name)
     cfg = dict(PROVIDERS[name])
     cfg["name"] = name
-    cfg["base_url"] = os.environ.get("LLM_BASE_URL") or cfg["base_url"]
-    cfg["model"] = os.environ.get("LLM_MODEL") or cfg["default_model"]
+    suffix = name.upper().replace("-", "_")
+    cfg["base_url"] = (os.environ.get(f"LLM_BASE_URL_{suffix}")
+                       or (os.environ.get("LLM_BASE_URL") if primary else None)
+                       or cfg["base_url"])
+    cfg["model"] = (os.environ.get(f"LLM_MODEL_{suffix}")
+                    or (os.environ.get("LLM_MODEL") if primary else None)
+                    or cfg["default_model"])
     cfg["api_key"] = os.environ.get(cfg["key_env"]) if cfg["key_env"] else None
     return cfg
 
