@@ -62,3 +62,43 @@ def test_every_runtime_requirement_carries_a_version_constraint():
         loose.append(line)                      # no constraint at all
 
     assert not loose, f"unconstrained or newly-ranged requirements: {loose}"
+
+
+def test_the_whole_suite_collects_without_torch():
+    """CI installs requirements-dev.txt, which has no torch. A test that
+    reaches into utils.audio_utils passes on a development machine and fails
+    on every CI job -- which is exactly what happened when three comparison
+    tests imported it, and is why utils/compare.py exists.
+
+    Collection is enough: an import-time dependency shows up there.
+    """
+    import subprocess
+    import sys
+    import textwrap
+
+    # A meta-path hook is used rather than uninstalling anything, so the
+    # check costs a second and needs no separate environment.
+    program = textwrap.dedent("""
+        import sys
+
+        BLOCKED = ("torch", "transformers", "librosa", "spacy",
+                   "sentence_transformers", "faster_whisper", "sklearn")
+
+        class Blocker:
+            # find_spec, not find_module: the latter was removed in 3.12, so
+            # a blocker written against it silently does nothing and the
+            # guard passes without guarding anything.
+            def find_spec(self, name, path=None, target=None):
+                if name.split(".")[0] in BLOCKED:
+                    raise ImportError(f"{name} is not installed in CI")
+                return None
+
+        sys.meta_path.insert(0, Blocker())
+        import pytest
+        sys.exit(pytest.main(["--collect-only", "-q", "tests/"]))
+    """)
+    result = subprocess.run([sys.executable, "-c", program], cwd=REPO_ROOT,
+                            capture_output=True, text=True, timeout=180)
+    assert result.returncode == 0, (
+        "the suite does not collect without the ML stack:\n"
+        + result.stdout[-3000:] + result.stderr[-2000:])
