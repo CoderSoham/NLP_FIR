@@ -101,6 +101,15 @@ def resolve(name):
     return cfg
 
 
+def _backoff(attempt, deadline):
+    """Exponential backoff, clipped to whatever the budget has left.
+
+    Sleeping past the deadline wastes the remainder on waiting rather than on
+    one more try, and returns the failure later than it was known.
+    """
+    time.sleep(max(0.0, min(2 ** attempt, 30, deadline - time.monotonic())))
+
+
 def chat_completion(cfg, messages, timeout=None, json_mode=True,
                     max_tokens=None, temperature=0.0):
     """One /chat/completions call. Returns the assistant's text.
@@ -116,6 +125,13 @@ def chat_completion(cfg, messages, timeout=None, json_mode=True,
     # far more than local, so the timeout is generous and configurable.
     max_tokens = max_tokens or int(os.environ.get("LLM_MAX_TOKENS", 8192))
     timeout = timeout or int(os.environ.get("LLM_TIMEOUT", 300))
+
+    # A deadline for the whole stage, not per attempt. Five retries at a 300s
+    # timeout is twenty-five minutes, and since the local classifiers stopped
+    # running whenever this succeeds, this stage *is* the request -- a hung
+    # provider would hold an upload behind a spinner for the whole of it.
+    # Expiring here fails the stage, which puts the local path back in play.
+    deadline = time.monotonic() + int(os.environ.get("LLM_DEADLINE", 180))
     payload = {
         "model": cfg["model"],
         "messages": messages,
@@ -132,6 +148,12 @@ def chat_completion(cfg, messages, timeout=None, json_mode=True,
     attempt = 0
     while True:
         attempt += 1
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise RuntimeError(
+                f"{cfg['name']} did not answer within the "
+                f"{os.environ.get('LLM_DEADLINE', 180)}s budget "
+                f"after {attempt - 1} attempt(s)")
         body = json.dumps(payload).encode()
         headers = {"Content-Type": "application/json",
                    "User-Agent": USER_AGENT}
@@ -141,21 +163,30 @@ def chat_completion(cfg, messages, timeout=None, json_mode=True,
             cfg["base_url"].rstrip("/") + "/chat/completions",
             data=body, headers=headers, method="POST")
         try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
+            with urllib.request.urlopen(
+                    request, timeout=min(timeout, remaining)) as response:
                 data = json.loads(response.read().decode())
             return data["choices"][0]["message"]["content"]
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode(errors="replace")[:300]
-            if json_mode and "response_format" in detail and "response_format" in payload:
+            # Two shapes of the same problem, both fixed by asking in plain
+            # text and parsing the result ourselves. Some providers reject
+            # the response_format field outright; Groq accepts it and then
+            # returns 400 json_validate_failed when the model's output does
+            # not satisfy it, with an empty failed_generation that says
+            # nothing about why.
+            if json_mode and "response_format" in payload and (
+                    "response_format" in detail
+                    or "json_validate_failed" in detail):
                 payload.pop("response_format")
                 continue
             if exc.code in (408, 409, 429, 500, 502, 503, 504) and attempt <= retries:
-                time.sleep(min(2 ** attempt, 30))
+                _backoff(attempt, deadline)
                 continue
             raise RuntimeError(f"HTTP {exc.code} from {cfg['name']}: {detail}") from exc
         except urllib.error.URLError as exc:
             if attempt <= retries:
-                time.sleep(min(2 ** attempt, 30))
+                _backoff(attempt, deadline)
                 continue
             raise RuntimeError(f"cannot reach {cfg['name']} at "
                                f"{cfg['base_url']}: {exc.reason}") from exc

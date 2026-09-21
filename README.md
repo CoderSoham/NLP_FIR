@@ -218,6 +218,7 @@ Every setting is an environment variable, read in `config.py`.
 | `LLM_MODEL` | by provider | Override the provider's default model |
 | `LLM_FALLBACK_BACKENDS` | keys present | Providers to try if the first is rate limited |
 | `LOCAL_ANALYSIS` | `auto` | `always` to run the local classifiers too, `never` to skip them |
+| `LLM_DEADLINE` | `180` | Seconds for the whole extraction stage, retries included |
 | `TRANSCRIPT_CACHE` | `storage/transcripts` | Cached transcripts, keyed by audio hash |
 | `LOCAL_LLM_MODEL` | by hardware | Any instruct model on the Hub |
 | `LOCAL_LLM_DEVICE` | by hardware | `cuda` or `cpu` |

@@ -88,6 +88,9 @@ def test_json_mode_is_retried_without_response_format(monkeypatch):
 def test_an_unreachable_provider_names_itself(monkeypatch):
     def boom(req, timeout=None):
         raise urllib.error.URLError("Connection refused")
+    # Without stubbing sleep this test really waits out the backoff -- it was
+    # 30 of the suite's 35 seconds on its own.
+    monkeypatch.setattr(llm_providers.time, "sleep", lambda _s: None)
     monkeypatch.setattr(llm_providers.urllib.request, "urlopen", boom)
     cfg = llm_providers.resolve("ollama")
     with pytest.raises(RuntimeError, match="cannot reach ollama"):
@@ -100,3 +103,117 @@ def test_eval_harness_loads_project_config():
     source = open("eval/run.py").read()
     assert "import config" in source
     assert source.index("import config") < source.index("def score")
+
+
+# ---- the stage budget ------------------------------------------------------
+# Since the local classifiers stopped running whenever the extraction
+# succeeds, this call *is* the request. Five retries at a 300s timeout is
+# twenty-five minutes behind a spinner.
+
+class _Ok:
+    def __enter__(self): return self
+    def __exit__(self, *a): return False
+    def read(self):
+        return json.dumps({"choices": [{"message": {"content": "{}"}}]}).encode()
+
+
+def test_groqs_json_validate_failure_retries_in_plain_text(monkeypatch):
+    """Groq accepts response_format and then 400s when the output does not
+    satisfy it, with an empty failed_generation. Same problem as a provider
+    rejecting the field, same remedy."""
+    calls = []
+
+    def fake_urlopen(req, timeout=None):
+        payload = json.loads(req.data)
+        calls.append(payload)
+        if "response_format" in payload:
+            raise _fake_http_error(400, json.dumps({"error": {
+                "message": "Failed to validate JSON.",
+                "code": "json_validate_failed", "failed_generation": ""}}))
+        return _Ok()
+
+    monkeypatch.setattr(llm_providers.urllib.request, "urlopen", fake_urlopen)
+    cfg = llm_providers.resolve("ollama")
+    assert llm_providers.chat_completion(cfg, [{"role": "user", "content": "x"}]) == "{}"
+    assert len(calls) == 2 and "response_format" not in calls[1]
+
+
+def test_retries_stop_when_the_budget_is_spent(monkeypatch):
+    attempts = []
+    clock = [1000.0]
+
+    def fake_urlopen(req, timeout=None):
+        attempts.append(timeout)
+        clock[0] += 20                      # each attempt burns 20s
+        raise _fake_http_error(429, "rate limited")
+
+    monkeypatch.setattr(llm_providers.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(llm_providers.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(llm_providers.time, "sleep",
+                        lambda s: clock.__setitem__(0, clock[0] + s))
+    monkeypatch.setenv("LLM_DEADLINE", "50")
+
+    cfg = llm_providers.resolve("ollama")
+    with pytest.raises(RuntimeError, match="did not answer within the 50s budget"):
+        llm_providers.chat_completion(cfg, [{"role": "user", "content": "x"}])
+
+    # Stopped on the clock, not on the retry count -- LLM_RETRIES is 4.
+    assert len(attempts) < 4
+
+
+def test_each_attempt_is_capped_by_what_the_budget_has_left(monkeypatch):
+    """A 300s socket timeout inside a 180s budget is a 300s socket timeout."""
+    seen = []
+    clock = [1000.0]
+
+    def fake_urlopen(req, timeout=None):
+        seen.append(timeout)
+        return _Ok()
+
+    monkeypatch.setattr(llm_providers.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(llm_providers.time, "monotonic", lambda: clock[0])
+    monkeypatch.setenv("LLM_DEADLINE", "45")
+    monkeypatch.setenv("LLM_TIMEOUT", "300")
+
+    cfg = llm_providers.resolve("ollama")
+    llm_providers.chat_completion(cfg, [{"role": "user", "content": "x"}])
+    assert seen == [45]
+
+
+def test_backoff_never_sleeps_past_the_deadline(monkeypatch):
+    """Sleeping past the budget spends the remainder waiting rather than on
+    one more try, and returns the failure later than it was known."""
+    clock = [1000.0]
+    slept = []
+    monkeypatch.setattr(llm_providers.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(llm_providers.time, "sleep", slept.append)
+
+    llm_providers._backoff(attempt=5, deadline=clock[0] + 3)
+    assert slept == [3]
+
+    slept.clear()
+    llm_providers._backoff(attempt=5, deadline=clock[0] - 10)
+    assert slept == [0.0]
+
+
+def test_a_generous_budget_still_allows_the_configured_retries(monkeypatch):
+    """The deadline is a ceiling, not a replacement for the retry count."""
+    attempts = []
+    clock = [1000.0]
+
+    def fake_urlopen(req, timeout=None):
+        attempts.append(timeout)
+        clock[0] += 1
+        raise _fake_http_error(503, "busy")
+
+    monkeypatch.setattr(llm_providers.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(llm_providers.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(llm_providers.time, "sleep",
+                        lambda s: clock.__setitem__(0, clock[0] + s))
+    monkeypatch.setenv("LLM_DEADLINE", "3600")
+    monkeypatch.setenv("LLM_RETRIES", "2")
+
+    cfg = llm_providers.resolve("ollama")
+    with pytest.raises(RuntimeError, match="HTTP 503"):
+        llm_providers.chat_completion(cfg, [{"role": "user", "content": "x"}])
+    assert len(attempts) == 3            # the first, plus two retries
