@@ -77,8 +77,9 @@
       <div class="triage-main">
         <span class="triage-label">Nearest station</span>
         <span class="triage-value">
-          {% if dispatch and dispatch.basis == 'location_match' %}
+          {% if dispatch and dispatch.basis in ('nearest_by_distance', 'location_match') %}
             {{ dispatch.station }}{% if dispatch.eta_min %} · {{ dispatch.eta_min }} min{% endif %}
+            {% if dispatch.example_data %}<span class="placeholder">example data</span>{% endif %}
           {% else %}
             <span class="muted">No location match</span>
           {% endif %}

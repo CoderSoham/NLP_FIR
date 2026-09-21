@@ -24,7 +24,8 @@ warnings.filterwarnings('ignore')
 from config import (PROCESSED_FOLDER, WHISPER_MODEL_NAME, FORCE_CPU,
                     MAX_AUDIO_SECONDS, EMOTION_MIN_CONFIDENCE)
 from utils.plots import plot_path, generate_entity_plot
-from utils.dispatch import get_dispatch_suggestion
+from utils.dispatch import get_dispatch_suggestion, load_stations
+from utils.geocode import locate as geocode_location
 from utils.signals import augment_actions
 from utils.severity import severity_score, severity_label
 from utils.summary import length_budget, is_informative
@@ -744,7 +745,14 @@ def process_audio_file(input_path, output_folder, progress=None):
         
         # Generate PDF report
         # Dispatch suggestion
-        dispatch = get_dispatch_suggestion(emergency_type, probable_location)
+        # The model's location is used before spaCy's: it returns the address
+        # the caller gave, where spaCy returns whichever GPE appeared first in
+        # the transcript -- often a city mentioned in passing.
+        dispatch_location = (llm_record or {}).get('location') or probable_location
+        registry = load_stations()
+        dispatch = get_dispatch_suggestion(
+            emergency_type, dispatch_location, stations=registry,
+            incident_coords=geocode_location(dispatch_location, registry))
 
         data = {
             'report_id': report_id,

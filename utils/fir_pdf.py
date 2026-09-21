@@ -250,17 +250,38 @@ def _triage_band(pdf, data, record):
         + f"   |   Report {data.get('report_id', '')[:12]}"), fill=True, **FLOW)
 
     dispatch = data.get("dispatch") or {}
-    if dispatch.get("basis") == "location_match":
-        eta = dispatch.get("eta_min")
+    line = _dispatch_line(dispatch)
+    if line:
+        pdf.multi_cell(CONTENT_WIDTH, 6, sanitize("  " + line),
+                       fill=True, **FLOW)
+    if dispatch.get("example_data"):
+        # The one fabricated field on a page where everything else is
+        # evidenced. It says so, in the band, next to the name it invented.
         pdf.multi_cell(CONTENT_WIDTH, 6, sanitize(
-            f"  Nearest station: {dispatch.get('station')}"
-            f" (matched on '{dispatch.get('matched_on')}')"
-            + (f", ETA {eta} minutes" if eta else "")), fill=True, **FLOW)
-    elif dispatch.get("station"):
-        pdf.multi_cell(CONTENT_WIDTH, 6, sanitize(
-            f"  Nearest station: {dispatch.get('station')} - default for this "
-            f"emergency type, no location matched, no ETA."), fill=True, **FLOW)
+            "  PLACEHOLDER: the station registry is example data. These "
+            "stations do not exist."), fill=True, **FLOW)
     pdf.ln(2)
+
+
+def _dispatch_line(dispatch):
+    """One line naming the station and saying how confident it is entitled to be."""
+    station = dispatch.get("station")
+    if not station:
+        return ""
+    eta, basis = dispatch.get("eta_min"), dispatch.get("basis")
+    if basis == "nearest_by_distance":
+        km = dispatch.get("distance_km")
+        return (f"Nearest station: {station}"
+                + (f" - {km} km away" if km is not None else "")
+                + (f", about {eta} minutes by road" if eta else ""))
+    if basis == "location_match":
+        return (f"Nearest station: {station} (matched the word "
+                f"'{dispatch.get('matched_on')}' in the location)"
+                + (f". Its nominal response time is {eta} minutes -- a figure "
+                   f"stored for this station, not an estimate for this call."
+                   if eta else ""))
+    return (f"Nearest station: {station} - default for this emergency type. "
+            f"No location matched, so no ETA.")
 
 
 def _weapons(pdf, record):

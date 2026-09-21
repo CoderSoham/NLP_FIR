@@ -158,6 +158,29 @@ disagree. That is the only way to get an independent check on incident type and
 severity, and it costs roughly seventy seconds on a ten-minute call. The result
 page says which path classified the call either way.
 
+## Dispatch
+
+The registry that ships is **example data** — seven invented stations, and the
+result page and the report both label it as a placeholder while it is. Replace
+it with real stations for your area:
+
+```bash
+python scripts/build_stations.py my-city.csv --out stations.local.json
+```
+
+The CSV needs `name,type,lat,lon`; most cities publish exactly this ("<city>
+fire station locations open data"). With coordinates on the stations, the
+nearest one is chosen by great-circle distance and the ETA is computed from it
+rather than read from the file.
+
+The incident needs coordinates too, which means a geocoder — **off by
+default**, because a call's location is the most identifying string the
+pipeline produces and sending it to a third party is not a decision this
+project should make for you. `GEOCODER=registry` uses an offline `places`
+table in your stations file and never touches the network.
+`GEOCODER=nominatim` asks OpenStreetMap, which is free, rate limited, and
+receives the address.
+
 ## Running it locally instead
 
 No keys needed. `LLM_BACKEND=local` and `ASR_BACKEND=local` are the defaults.
@@ -224,6 +247,9 @@ Every setting is an environment variable, read in `config.py`.
 | `LLM_FALLBACK_BACKENDS` | keys present | Providers to try if the first is rate limited |
 | `LOCAL_ANALYSIS` | `auto` | `always` to run the local classifiers too, `never` to skip them |
 | `LLM_DEADLINE` | `180` | Seconds for the whole extraction stage, retries included |
+| `STATIONS_FILE` | `stations.json` | Your own station registry |
+| `GEOCODER` | `off` | `registry` for the offline table, `nominatim` to call OpenStreetMap |
+| `DISPATCH_SPEED_KMH` | `50` | Average road speed used for the ETA estimate |
 | `TRANSCRIPT_CACHE` | `storage/transcripts` | Cached transcripts, keyed by audio hash |
 | `LOCAL_LLM_MODEL` | by hardware | Any instruct model on the Hub |
 | `LOCAL_LLM_DEVICE` | by hardware | `cuda` or `cpu` |

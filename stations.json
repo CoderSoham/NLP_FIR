@@ -1,4 +1,7 @@
 {
+  "_example": true,
+  "_comment": "EXAMPLE DATA. These stations do not exist. Names, coverage keywords and response times were invented to demonstrate the mechanism, and every surface that shows a station labels it as a placeholder while _example is true. Replace this file (STATIONS_FILE=/path/to/yours) with real stations for your area, and delete _example when you do. Add lat/lon to each station and a places table to get computed distances and ETAs instead of stored constants -- see scripts/build_stations.py.",
+  "places": {},
   "medical": [
     {
       "name": "Central Hospital",

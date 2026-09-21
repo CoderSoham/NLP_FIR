@@ -429,3 +429,18 @@ code {
      need their own ground rather than bleeding into the page. */
   background: #ffffff;
 }
+
+/* A field the pipeline cannot stand behind, on a page where everything else
+   is evidenced. It has to look different from the fields that are real. */
+
+.placeholder {
+  display: inline-block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px dashed var(--muted);
+  color: var(--muted);
+  vertical-align: middle;
+}
