@@ -10,6 +10,7 @@ never done.
 Writes one JSON per configuration to eval/results/ so runs can be diffed.
 """
 import argparse
+import statistics
 import json
 import os
 import sys
@@ -92,6 +93,8 @@ def main():
     ap.add_argument("--device", help="LOCAL_LLM_DEVICE override; local only")
     ap.add_argument("--backend", default=os.environ.get("LLM_BACKEND", "local"))
     ap.add_argument("--out", default=os.path.join(HERE, "results"))
+    ap.add_argument("--repeat", type=int, default=1,
+                    help="run the whole set N times and report the spread")
     args = ap.parse_args()
 
     os.environ["LLM_BACKEND"] = args.backend
@@ -123,6 +126,42 @@ def main():
               f"{label!r} -- the results below are not for the model you named.")
     print()
 
+    scores = []
+    for attempt in range(1, args.repeat + 1):
+        if args.repeat > 1:
+            print(f"--- run {attempt} of {args.repeat} ---")
+        passed, total, rows = score_all(
+            transcripts, labels, extract_incident, verbose=args.repeat == 1)
+        scores.append(passed)
+        if args.repeat > 1:
+            print(f"    {passed}/{total}")
+
+    if args.repeat > 1:
+        # Three consecutive runs on identical code and identical input gave
+        # 82, 81 and 81, with different items failing each time. A single run
+        # is a draw from that distribution, not a measurement of it -- and
+        # reading 82 against 81 as a regression is the mistake this exists to
+        # prevent.
+        print(f"\nTOTAL {min(scores)}-{max(scores)}/{total} over "
+              f"{args.repeat} runs (mean {statistics.mean(scores):.1f})")
+        if len(set(scores)) > 1:
+            print("The spread is the model's, not the code's. Compare ranges, "
+                  "not single runs.")
+    else:
+        print(f"\nTOTAL {passed}/{total}")
+
+    os.makedirs(args.out, exist_ok=True)
+    slug = label.replace("/", "_").replace(" ", "").replace("(", "").replace(")", "")
+    path = os.path.join(args.out, f"{backend.name}__{slug}.json")
+    json.dump({"backend": backend.name, "model": label, "load_seconds": load_s,
+               "passed": passed, "total": total, "runs": scores, "rows": rows},
+              open(path, "w"), indent=2, default=str)
+    print("wrote", path)
+    return 0
+
+
+def score_all(transcripts, labels, extract_incident, verbose=True):
+    """One pass over the set. Returns (passed, total, rows)."""
     rows, passed, total = [], 0, 0
     for sample, entry in sorted(transcripts.items()):
         truth = labels.get(sample)
@@ -143,22 +182,16 @@ def main():
         ok = sum(1 for c in checks.values() if c["pass"])
         passed += ok
         total += len(checks)
-        print(f"{sample:14} {ok}/{len(checks)}  {elapsed:6.1f}s")
-        for name, c in checks.items():
-            if not c["pass"]:
-                print(f"    FAIL {name:22} expected {c['expected']!r}  got {c['got']!r}")
+        if verbose:
+            print(f"{sample:14} {ok}/{len(checks)}  {elapsed:6.1f}s")
+            for name, c in checks.items():
+                if not c["pass"]:
+                    print(f"    FAIL {name:22} expected {c['expected']!r}  "
+                          f"got {c['got']!r}")
         rows.append({"sample": sample, "seconds": elapsed,
                      "checks": checks, "record": record, "meta": meta})
 
-    print(f"\nTOTAL {passed}/{total}")
-    os.makedirs(args.out, exist_ok=True)
-    slug = label.replace("/", "_").replace(" ", "").replace("(", "").replace(")", "")
-    path = os.path.join(args.out, f"{backend.name}__{slug}.json")
-    json.dump({"backend": backend.name, "model": label, "load_seconds": load_s,
-               "passed": passed, "total": total, "rows": rows},
-              open(path, "w"), indent=2, default=str)
-    print("wrote", path)
-    return 0
+    return passed, total, rows
 
 
 if __name__ == "__main__":
