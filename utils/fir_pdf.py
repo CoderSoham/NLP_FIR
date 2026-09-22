@@ -502,6 +502,12 @@ def _provenance(pdf, data):
         pdf.note("Affect is a weak signal on telephone audio and feeds the "
                  "severity score only as one term of four.")
 
+    if data.get("severity_source"):
+        floor = data.get("severity_floor")
+        pdf.field("Severity from", data["severity_source"]
+                  + (f" - the transcript implies at least {floor}"
+                     if floor else ""), label_width=46)
+
     if data.get("second_opinion") is False:
         pdf.field("Second opinion", "not run - the extraction model classified "
                                     "this call and the local classifiers were "

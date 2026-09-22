@@ -730,3 +730,12 @@ code {
   .report-head h1 { font-size: 1.35rem; }
   .dropzone { padding: 32px 16px; }
 }
+
+/* A severity that was raised by a keyword rather than by a judgement is a
+   different claim, and the band says which it was. */
+.triage-note {
+  font-size: 0.78rem;
+  color: var(--sev-text);
+  opacity: 0.75;
+  margin-top: 2px;
+}

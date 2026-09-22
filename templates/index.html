@@ -96,7 +96,13 @@
       </div>
       <div class="triage-main">
         <span class="triage-label">Severity</span>
-        <span class="triage-value">{{ (L.severity or severity)|title }}</span>
+        <span class="triage-value">{{ severity|title }}</span>
+        {% if severity_source == 'keyword floor' %}
+        <span class="triage-note">raised from
+          {{ severity_before_floor|title }} by
+          {% if severity_floor_words %}&ldquo;{{ severity_floor_words|join('", "') }}&rdquo;
+          {% else %}words{% endif %} in the transcript</span>
+        {% endif %}
       </div>
       <div class="triage-main">
         <span class="triage-label">Location</span>
@@ -308,6 +314,11 @@
                 <span class="muted">Set <code>LOCAL_ANALYSIS=always</code> to run them.</span>
               {% endif %}
             </dd>
+            {% endif %}
+            {% if severity_source %}
+            <dt>Severity from</dt>
+            <dd>{{ severity_source }}{% if severity_floor %} · the transcript
+              implies at least <strong>{{ severity_floor }}</strong>{% endif %}</dd>
             {% endif %}
             {% if summarised_by %}
             <dt>Summarised by</dt>

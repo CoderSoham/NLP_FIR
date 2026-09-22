@@ -275,7 +275,9 @@ Every setting is an environment variable, read in `config.py`.
 app.py            Flask routes
 config.py         Environment-backed settings
 stations.json     Dispatch station registry — edit this, not the code
+docs/             Architecture and evaluation notes
 eval/             Evaluation harness, labels, stored results
+scripts/          Calibration, benchmarking, registry building
 utils/            Pipeline stages, one concern per module
 tests/            Runs without the ML stack installed
 ```
@@ -286,13 +288,23 @@ testable without a model lives in its own module beside it.
 ### Evaluating a change
 
 ```bash
-python -m eval.run --backend nvidia              # scores against eval/labels.json
+python -m eval.run --repeat 3                    # scores against eval/labels.json
 python -m eval.run --backend local --model ...   # compare
+python scripts/calibrate_severity.py             # is severity measuring anything?
+python scripts/benchmark.py --runs 3             # end-to-end latency on real audio
 ```
 
 Runs on saved transcripts, not audio, so comparing models costs no
 transcription. Full extractions are written to `eval/results/`, so a scoring
 change can be re-applied to past runs without calling a model again.
+
+**Use `--repeat`.** Three runs on identical code gave 82, 81 and 81 out of 84,
+with different items failing each time — a single run is a draw from that
+distribution, not a measurement of it.
+
+Results and method: [docs/evaluation.md](docs/evaluation.md). It includes the
+finding that the hand-tuned severity weights score 4/14 against a keyword
+baseline's 12/14, and what ships as a result.
 
 ### Tests
 

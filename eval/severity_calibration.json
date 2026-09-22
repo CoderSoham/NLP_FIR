@@ -1,0 +1,138 @@
+{
+  "n": 14,
+  "shipped": {
+    "label": 0.4,
+    "sentiment": 0.2,
+    "emotion": 0.2,
+    "entities": 0.2
+  },
+  "fitted": {
+    "label": 0.0,
+    "sentiment": 0.0,
+    "emotion": 0.3,
+    "entities": 0.7
+  },
+  "results": [
+    {
+      "name": "always low",
+      "hits": 2,
+      "n": 14,
+      "under": 12,
+      "over": 0,
+      "ci": [
+        0.04,
+        0.399
+      ]
+    },
+    {
+      "name": "always medium",
+      "hits": 4,
+      "n": 14,
+      "under": 10,
+      "over": 0,
+      "ci": [
+        0.117,
+        0.546
+      ]
+    },
+    {
+      "name": "always high",
+      "hits": 6,
+      "n": 14,
+      "under": 6,
+      "over": 2,
+      "ci": [
+        0.214,
+        0.674
+      ]
+    },
+    {
+      "name": "always critical",
+      "hits": 10,
+      "n": 14,
+      "under": 0,
+      "over": 4,
+      "ci": [
+        0.454,
+        0.883
+      ]
+    },
+    {
+      "name": "keyword baseline",
+      "hits": 12,
+      "n": 14,
+      "under": 1,
+      "over": 1,
+      "ci": [
+        0.601,
+        0.96
+      ]
+    },
+    {
+      "name": "hand-chosen weights",
+      "hits": 4,
+      "n": 14,
+      "under": 10,
+      "over": 0,
+      "ci": [
+        0.117,
+        0.546
+      ]
+    },
+    {
+      "name": "fitted (in-sample)",
+      "hits": 5,
+      "n": 14,
+      "under": 10,
+      "over": 0,
+      "ci": [
+        0.163,
+        0.612
+      ]
+    },
+    {
+      "name": "fitted (leave-one-out)",
+      "hits": 3,
+      "n": 14,
+      "under": 10,
+      "over": 0,
+      "ci": [
+        0.076,
+        0.476
+      ]
+    },
+    {
+      "name": "weights, keyword floor",
+      "hits": 12,
+      "n": 14,
+      "under": 1,
+      "over": 1,
+      "ci": [
+        0.601,
+        0.96
+      ]
+    },
+    {
+      "name": "extraction model",
+      "hits": 10,
+      "n": 14,
+      "under": 4,
+      "over": 0,
+      "ci": [
+        0.454,
+        0.883
+      ]
+    },
+    {
+      "name": "model, keyword floor",
+      "hits": 13,
+      "n": 14,
+      "under": 0,
+      "over": 1,
+      "ci": [
+        0.685,
+        0.987
+      ]
+    }
+  ]
+}

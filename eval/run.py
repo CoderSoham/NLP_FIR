@@ -44,11 +44,21 @@ def score(record, truth):
     checks["incident_type"] = {"expected": truth["incident_type"], "got": got,
                                "pass": got == truth["incident_type"]}
 
+    # A band, not a ceiling. As a ceiling this check could only fail in the
+    # safe direction: a model answering "low" to every call -- an
+    # officer-involved shooting included -- passed 14/14, while one answering
+    # "critical" to everything passed 10/14. It rewarded under-triage and
+    # penalised over-triage, which is backwards from every dispatch protocol
+    # there is, and it meant severity contributed fourteen free points to
+    # every score this harness has ever reported.
     got = record.get("severity") or "unknown"
-    ceiling = truth["severity_max"]
-    ok = (SEVERITY_ORDER.index(got) <= SEVERITY_ORDER.index(ceiling)
-          if got in SEVERITY_ORDER and ceiling in SEVERITY_ORDER else False)
-    checks["severity"] = {"expected": f"<= {ceiling}", "got": got, "pass": ok}
+    floor, ceiling = truth.get("severity_min", "unknown"), truth["severity_max"]
+    ok = (SEVERITY_ORDER.index(floor)
+          <= SEVERITY_ORDER.index(got)
+          <= SEVERITY_ORDER.index(ceiling)
+          if all(v in SEVERITY_ORDER for v in (got, floor, ceiling)) else False)
+    checks["severity"] = {"expected": f"{floor}..{ceiling}", "got": got,
+                          "pass": ok}
 
     weapons = record.get("weapons") or []
     names = [w.get("item") if isinstance(w, dict) else w for w in weapons]

@@ -1,0 +1,1344 @@
+{
+  "call_144.mp3": {
+    "distribution": {
+      "medium": 0.36589813232421875,
+      "high": 0.34112516045570374,
+      "low": 0.2929766774177551
+    },
+    "sentiment": {
+      "label": "NEU",
+      "score": 0.6001723408699036
+    },
+    "emotion": {
+      "label": "fear",
+      "score": 0.41185906529426575
+    },
+    "entities": [
+      {
+        "text": "911",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "19",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "20",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "two",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "911",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "a few minutes ago",
+        "label": "TIME"
+      }
+    ]
+  },
+  "call_206.mp3": {
+    "distribution": {
+      "high": 0.41248759627342224,
+      "low": 0.36112290620803833,
+      "medium": 0.22638940811157227
+    },
+    "sentiment": {
+      "label": "NEU",
+      "score": 0.9696388840675354
+    },
+    "emotion": {
+      "label": "neutral",
+      "score": 0.6763828992843628
+    },
+    "entities": [
+      {
+        "text": "Alachua County Sheriff's Office",
+        "label": "ORG"
+      },
+      {
+        "text": "January 29, 2012",
+        "label": "DATE"
+      },
+      {
+        "text": "0400 hours",
+        "label": "TIME"
+      },
+      {
+        "text": "Alachua County Sheriff's Office",
+        "label": "PERSON"
+      },
+      {
+        "text": "Lisa Godwin",
+        "label": "PERSON"
+      },
+      {
+        "text": "0406A",
+        "label": "DATE"
+      },
+      {
+        "text": "January 30, 2012",
+        "label": "DATE"
+      },
+      {
+        "text": "75",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "I-75",
+        "label": "PRODUCT"
+      },
+      {
+        "text": "mile marker",
+        "label": "PERSON"
+      },
+      {
+        "text": "75",
+        "label": "DATE"
+      },
+      {
+        "text": "Mary Good first",
+        "label": "PERSON"
+      },
+      {
+        "text": "second",
+        "label": "ORDINAL"
+      },
+      {
+        "text": "Gainesville",
+        "label": "GPE"
+      },
+      {
+        "text": "Gainesville",
+        "label": "PERSON"
+      },
+      {
+        "text": "Gainesville",
+        "label": "PERSON"
+      },
+      {
+        "text": "Gainesville University",
+        "label": "ORG"
+      }
+    ]
+  },
+  "call_21.mp3": {
+    "distribution": {
+      "high": 0.4820469617843628,
+      "low": 0.28341010212898254,
+      "medium": 0.23454293608665466
+    },
+    "sentiment": {
+      "label": "NEU",
+      "score": 0.6917459964752197
+    },
+    "emotion": {
+      "label": "anger",
+      "score": 0.37083202600479126
+    },
+    "entities": [
+      {
+        "text": "911",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "5",
+        "label": "MONEY"
+      },
+      {
+        "text": "Mueller Brass",
+        "label": "ORG"
+      },
+      {
+        "text": "Mueller Brass",
+        "label": "ORG"
+      },
+      {
+        "text": "just a minute",
+        "label": "TIME"
+      },
+      {
+        "text": "one",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "Mueller Brass",
+        "label": "ORG"
+      },
+      {
+        "text": "Mueller Brass",
+        "label": "ORG"
+      },
+      {
+        "text": "24",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "Jeep",
+        "label": "ORG"
+      },
+      {
+        "text": "Flint",
+        "label": "GPE"
+      },
+      {
+        "text": "minutes",
+        "label": "TIME"
+      },
+      {
+        "text": "the Best Auto Wash. Best Auto Wash.",
+        "label": "ORG"
+      },
+      {
+        "text": "two",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "586",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "five",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "949-8440",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "seven",
+        "label": "CARDINAL"
+      }
+    ]
+  },
+  "call_219.mp3": {
+    "distribution": {
+      "low": 0.38042062520980835,
+      "medium": 0.32914796471595764,
+      "high": 0.290431410074234
+    },
+    "sentiment": {
+      "label": "NEU",
+      "score": 0.9349097013473511
+    },
+    "emotion": {
+      "label": "fear",
+      "score": 0.6607878804206848
+    },
+    "entities": [
+      {
+        "text": "Longmont 9-1-1",
+        "label": "PERSON"
+      },
+      {
+        "text": "119",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "119",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "Sabrina",
+        "label": "PERSON"
+      },
+      {
+        "text": "two",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "Longmont 911",
+        "label": "PERSON"
+      },
+      {
+        "text": "Longmont",
+        "label": "GPE"
+      },
+      {
+        "text": "Colorado",
+        "label": "GPE"
+      },
+      {
+        "text": "about three miles",
+        "label": "QUANTITY"
+      },
+      {
+        "text": "Union Reservoir",
+        "label": "ORG"
+      },
+      {
+        "text": "three miles",
+        "label": "QUANTITY"
+      },
+      {
+        "text": "Union Reservoir",
+        "label": "ORG"
+      },
+      {
+        "text": "Bluefield",
+        "label": "PERSON"
+      }
+    ]
+  },
+  "call_225.mp3": {
+    "distribution": {
+      "high": 0.42796656489372253,
+      "low": 0.2967335879802704,
+      "medium": 0.2752998173236847
+    },
+    "sentiment": {
+      "label": "NEG",
+      "score": 0.8724914193153381
+    },
+    "emotion": {
+      "label": "neutral",
+      "score": 0.6175912022590637
+    },
+    "entities": [
+      {
+        "text": "April 4, 2012",
+        "label": "DATE"
+      },
+      {
+        "text": "12, 1908",
+        "label": "DATE"
+      },
+      {
+        "text": "17",
+        "label": "DATE"
+      },
+      {
+        "text": "Brian White",
+        "label": "PERSON"
+      },
+      {
+        "text": "Jake Burns",
+        "label": "PERSON"
+      },
+      {
+        "text": "Jake Burns",
+        "label": "PERSON"
+      },
+      {
+        "text": "Jake",
+        "label": "PERSON"
+      },
+      {
+        "text": "Brian",
+        "label": "PERSON"
+      },
+      {
+        "text": "Brian",
+        "label": "PERSON"
+      },
+      {
+        "text": "Brian",
+        "label": "PERSON"
+      },
+      {
+        "text": "Desiree Stapler-Fenny",
+        "label": "PERSON"
+      }
+    ]
+  },
+  "call_24.mp3": {
+    "distribution": {
+      "high": 0.4291623830795288,
+      "medium": 0.31545743346214294,
+      "low": 0.25538015365600586
+    },
+    "sentiment": {
+      "label": "NEU",
+      "score": 0.9596512317657471
+    },
+    "emotion": {
+      "label": "neutral",
+      "score": 0.8814488649368286
+    },
+    "entities": [
+      {
+        "text": "239",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "1511 hours",
+        "label": "TIME"
+      },
+      {
+        "text": "1331",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "Bannister Road",
+        "label": "FAC"
+      },
+      {
+        "text": "302 Young",
+        "label": "PRODUCT"
+      },
+      {
+        "text": "John Adams",
+        "label": "PERSON"
+      },
+      {
+        "text": "1330",
+        "label": "DATE"
+      },
+      {
+        "text": "Bannister Road",
+        "label": "FAC"
+      },
+      {
+        "text": "1511 hours",
+        "label": "TIME"
+      },
+      {
+        "text": "Mets",
+        "label": "ORG"
+      },
+      {
+        "text": "12",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "three",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "1331",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "East Spanish",
+        "label": "NORP"
+      },
+      {
+        "text": "530s",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "230s",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "15s",
+        "label": "DATE"
+      },
+      {
+        "text": "218",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "10-7",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "12",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "25",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "22",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "225",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "215",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "1",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "230",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "1",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "239",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "239",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "Lydia",
+        "label": "GPE"
+      },
+      {
+        "text": "50s",
+        "label": "DATE"
+      },
+      {
+        "text": "Lydia",
+        "label": "GPE"
+      },
+      {
+        "text": "one",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "50s",
+        "label": "DATE"
+      },
+      {
+        "text": "Lydia",
+        "label": "ORG"
+      },
+      {
+        "text": "Bannister",
+        "label": "FAC"
+      },
+      {
+        "text": "35",
+        "label": "DATE"
+      },
+      {
+        "text": "1331",
+        "label": "DATE"
+      },
+      {
+        "text": "50s",
+        "label": "DATE"
+      },
+      {
+        "text": "Lydia",
+        "label": "ORG"
+      },
+      {
+        "text": "Bannister",
+        "label": "FAC"
+      },
+      {
+        "text": "230",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "230",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "Matthew",
+        "label": "PERSON"
+      },
+      {
+        "text": "two",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "690",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "690",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "545",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "541",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "10",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "second",
+        "label": "ORDINAL"
+      },
+      {
+        "text": "545",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "541",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "10",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "10",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "15-15",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "230",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "230",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "27",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "564",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "564",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "101st",
+        "label": "ORG"
+      },
+      {
+        "text": "Lydia",
+        "label": "ORG"
+      },
+      {
+        "text": "the White Mill",
+        "label": "FAC"
+      },
+      {
+        "text": "Lydia",
+        "label": "ORG"
+      },
+      {
+        "text": "Bannister",
+        "label": "FAC"
+      },
+      {
+        "text": "230",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "Ricky",
+        "label": "PERSON"
+      },
+      {
+        "text": "230",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "Bannister",
+        "label": "PRODUCT"
+      },
+      {
+        "text": "Lydia",
+        "label": "PERSON"
+      },
+      {
+        "text": "Two",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "Valero",
+        "label": "PRODUCT"
+      },
+      {
+        "text": "Lydia",
+        "label": "ORG"
+      },
+      {
+        "text": "231",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "Sarge",
+        "label": "PERSON"
+      },
+      {
+        "text": "Benita",
+        "label": "ORG"
+      },
+      {
+        "text": "245",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "239",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "27 mile",
+        "label": "QUANTITY"
+      },
+      {
+        "text": "9640",
+        "label": "DATE"
+      },
+      {
+        "text": "Lydia",
+        "label": "GPE"
+      },
+      {
+        "text": "549",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "542",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "542",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "542",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "239",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "239",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "one",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "Lydia",
+        "label": "GPE"
+      },
+      {
+        "text": "55",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "mid-50s",
+        "label": "DATE"
+      },
+      {
+        "text": "15, 18 hours",
+        "label": "TIME"
+      },
+      {
+        "text": "Dwight",
+        "label": "PERSON"
+      },
+      {
+        "text": "K9",
+        "label": "PRODUCT"
+      },
+      {
+        "text": "10-4",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "224-1041",
+        "label": "DATE"
+      },
+      {
+        "text": "Bannister",
+        "label": "FAC"
+      },
+      {
+        "text": "224-1041",
+        "label": "DATE"
+      },
+      {
+        "text": "Bannister",
+        "label": "FAC"
+      },
+      {
+        "text": "1518",
+        "label": "DATE"
+      },
+      {
+        "text": "210",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "45-5",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "239",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "239 210",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "230",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "227",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "South Stone",
+        "label": "NORP"
+      },
+      {
+        "text": "830",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "240 240",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "this 50s",
+        "label": "DATE"
+      },
+      {
+        "text": "1519",
+        "label": "DATE"
+      },
+      {
+        "text": "K-9",
+        "label": "PERSON"
+      },
+      {
+        "text": "K-9",
+        "label": "PERSON"
+      },
+      {
+        "text": "K9",
+        "label": "PRODUCT"
+      },
+      {
+        "text": "49",
+        "label": "DATE"
+      },
+      {
+        "text": "210",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "210",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "Oldsmobile",
+        "label": "ORG"
+      },
+      {
+        "text": "two",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "four",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "Four",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "302",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "John Adam",
+        "label": "PERSON"
+      },
+      {
+        "text": "DOR",
+        "label": "ORG"
+      },
+      {
+        "text": "92",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "Cutlass Sierra",
+        "label": "PERSON"
+      },
+      {
+        "text": "Maroon Color",
+        "label": "GPE"
+      },
+      {
+        "text": "3716",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "210",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "210",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "39",
+        "label": "DATE"
+      },
+      {
+        "text": "tonight",
+        "label": "TIME"
+      }
+    ]
+  },
+  "call_456.mp3": {
+    "distribution": {
+      "high": 0.41323554515838623,
+      "medium": 0.351390540599823,
+      "low": 0.23537394404411316
+    },
+    "sentiment": {
+      "label": "NEU",
+      "score": 0.6673802733421326
+    },
+    "emotion": {
+      "label": "fear",
+      "score": 0.6031607985496521
+    },
+    "entities": [
+      {
+        "text": "PENF",
+        "label": "ORG"
+      },
+      {
+        "text": "1109",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "1109",
+        "label": "DATE"
+      },
+      {
+        "text": "East Alameda",
+        "label": "LOC"
+      },
+      {
+        "text": "Edwin Waters",
+        "label": "PERSON"
+      },
+      {
+        "text": "Edwin",
+        "label": "PERSON"
+      },
+      {
+        "text": "970",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "one",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "1109",
+        "label": "DATE"
+      },
+      {
+        "text": "East Alameda",
+        "label": "LOC"
+      },
+      {
+        "text": "about 15 feet",
+        "label": "QUANTITY"
+      },
+      {
+        "text": "45",
+        "label": "CARDINAL"
+      }
+    ]
+  },
+  "call_56.mp3": {
+    "distribution": {
+      "medium": 0.4077428877353668,
+      "high": 0.3688478171825409,
+      "low": 0.22340935468673706
+    },
+    "sentiment": {
+      "label": "NEU",
+      "score": 0.5004280805587769
+    },
+    "emotion": {
+      "label": "neutral",
+      "score": 0.416500061750412
+    },
+    "entities": [
+      {
+        "text": "1160",
+        "label": "DATE"
+      },
+      {
+        "text": "1160",
+        "label": "DATE"
+      },
+      {
+        "text": "11 months old",
+        "label": "DATE"
+      },
+      {
+        "text": "a minute",
+        "label": "TIME"
+      },
+      {
+        "text": "a minute",
+        "label": "TIME"
+      },
+      {
+        "text": "a minute",
+        "label": "TIME"
+      },
+      {
+        "text": "1160",
+        "label": "DATE"
+      },
+      {
+        "text": "1680",
+        "label": "DATE"
+      },
+      {
+        "text": "1680",
+        "label": "DATE"
+      },
+      {
+        "text": "Irizarry",
+        "label": "PERSON"
+      },
+      {
+        "text": "Creech",
+        "label": "PERSON"
+      },
+      {
+        "text": "first",
+        "label": "ORDINAL"
+      },
+      {
+        "text": "Michelle",
+        "label": "PERSON"
+      },
+      {
+        "text": "just a few hours ago",
+        "label": "TIME"
+      },
+      {
+        "text": "Shh",
+        "label": "PERSON"
+      },
+      {
+        "text": "Last night around 11",
+        "label": "TIME"
+      },
+      {
+        "text": "11.30 last night",
+        "label": "TIME"
+      },
+      {
+        "text": "Rondo Lake",
+        "label": "LOC"
+      }
+    ]
+  },
+  "call_572.mp3": {
+    "distribution": {
+      "high": 0.45563504099845886,
+      "medium": 0.278384804725647,
+      "low": 0.2659801244735718
+    },
+    "sentiment": {
+      "label": "NEG",
+      "score": 0.9508085250854492
+    },
+    "emotion": {
+      "label": "fear",
+      "score": 0.6187909841537476
+    },
+    "entities": [
+      {
+        "text": "911",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "Arizona",
+        "label": "GPE"
+      },
+      {
+        "text": "ten",
+        "label": "CARDINAL"
+      }
+    ]
+  },
+  "call_589.mp3": {
+    "distribution": {
+      "low": 0.49052053689956665,
+      "medium": 0.2783925533294678,
+      "high": 0.23108690977096558
+    },
+    "sentiment": {
+      "label": "NEU",
+      "score": 0.9161408543586731
+    },
+    "emotion": {
+      "label": "neutral",
+      "score": 0.46517929434776306
+    },
+    "entities": [
+      {
+        "text": "About a year ago",
+        "label": "DATE"
+      },
+      {
+        "text": "Raleigh",
+        "label": "ORG"
+      },
+      {
+        "text": "all day",
+        "label": "DATE"
+      },
+      {
+        "text": "Durham",
+        "label": "GPE"
+      },
+      {
+        "text": "Raleigh",
+        "label": "PERSON"
+      },
+      {
+        "text": "Apex",
+        "label": "GPE"
+      },
+      {
+        "text": "about a year ago",
+        "label": "DATE"
+      },
+      {
+        "text": "four in the morning",
+        "label": "TIME"
+      },
+      {
+        "text": "Jolene Harvey",
+        "label": "PERSON"
+      },
+      {
+        "text": "Jolene Harvey",
+        "label": "PERSON"
+      },
+      {
+        "text": "Harvey",
+        "label": "PERSON"
+      },
+      {
+        "text": "60 years old",
+        "label": "DATE"
+      },
+      {
+        "text": "all night",
+        "label": "TIME"
+      },
+      {
+        "text": "six years",
+        "label": "DATE"
+      }
+    ]
+  },
+  "call_645.mp3": {
+    "distribution": {
+      "high": 0.49603429436683655,
+      "low": 0.2636392116546631,
+      "medium": 0.24032649397850037
+    },
+    "sentiment": {
+      "label": "NEG",
+      "score": 0.9671361446380615
+    },
+    "emotion": {
+      "label": "surprise",
+      "score": 0.7615559697151184
+    },
+    "entities": [
+      {
+        "text": "911",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "Lake Robert Slandering",
+        "label": "PERSON"
+      },
+      {
+        "text": "Winter Garden",
+        "label": "GPE"
+      },
+      {
+        "text": "Lake Robert Slandering",
+        "label": "PERSON"
+      },
+      {
+        "text": "Hispanic",
+        "label": "NORP"
+      }
+    ]
+  },
+  "call_696.mp3": {
+    "distribution": {
+      "high": 0.40944844484329224,
+      "medium": 0.3362305164337158,
+      "low": 0.2543210983276367
+    },
+    "sentiment": {
+      "label": "NEU",
+      "score": 0.965801477432251
+    },
+    "emotion": {
+      "label": "neutral",
+      "score": 0.4519311785697937
+    },
+    "entities": [
+      {
+        "text": "Dennis' Road Drive",
+        "label": "ORG"
+      },
+      {
+        "text": "Dennis' Road Drive",
+        "label": "ORG"
+      }
+    ]
+  },
+  "call_9.mp3": {
+    "distribution": {
+      "high": 0.5000944137573242,
+      "medium": 0.297817200422287,
+      "low": 0.20208849012851715
+    },
+    "sentiment": {
+      "label": "NEU",
+      "score": 0.9625276923179626
+    },
+    "emotion": {
+      "label": "neutral",
+      "score": 0.37629812955856323
+    },
+    "entities": [
+      {
+        "text": "911",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "7th Street Court",
+        "label": "ORG"
+      },
+      {
+        "text": "two",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "one",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "12",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "almost 14",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "12-year-old",
+        "label": "DATE"
+      },
+      {
+        "text": "Mike Forbus",
+        "label": "PERSON"
+      },
+      {
+        "text": "Mike",
+        "label": "PERSON"
+      },
+      {
+        "text": "12",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "10 and 12",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "12",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "14? 12 and 13 and a half",
+        "label": "DATE"
+      },
+      {
+        "text": "one",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "Mike Forbus",
+        "label": "PERSON"
+      },
+      {
+        "text": "605",
+        "label": "CARDINAL"
+      }
+    ]
+  },
+  "call_93.mp3": {
+    "distribution": {
+      "medium": 0.58739173412323,
+      "high": 0.28594300150871277,
+      "low": 0.12666526436805725
+    },
+    "sentiment": {
+      "label": "NEU",
+      "score": 0.5521434545516968
+    },
+    "emotion": {
+      "label": "fear",
+      "score": 0.7476785778999329
+    },
+    "entities": [
+      {
+        "text": "911",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "52-10-5-1",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "Heimlich",
+        "label": "GPE"
+      },
+      {
+        "text": "539-2443",
+        "label": "CARDINAL"
+      },
+      {
+        "text": "Heimlich",
+        "label": "GPE"
+      },
+      {
+        "text": "39 years old",
+        "label": "DATE"
+      },
+      {
+        "text": "Jake",
+        "label": "PERSON"
+      },
+      {
+        "text": "Heimlich",
+        "label": "GPE"
+      }
+    ]
+  }
+}

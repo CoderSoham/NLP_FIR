@@ -27,7 +27,8 @@ from utils.plots import plot_path, generate_entity_plot
 from utils.dispatch import get_dispatch_suggestion, load_stations
 from utils.geocode import locate as geocode_location
 from utils.signals import augment_actions
-from utils.severity import severity_score, severity_label
+from utils.severity import (severity_score, severity_label,
+                            apply_severity_floor, severity_from_signals)
 from utils.summary import length_budget, is_informative
 from utils.policy import local_analysis_wanted, model_summary
 from utils.compare import compare_classifications
@@ -701,11 +702,20 @@ def process_audio_file(input_path, output_folder, progress=None):
             emergency_type = (llm_record.get('incident_type') or 'unknown')
             severity = llm_record.get('severity') or 'low'
 
+        # Applied to whichever source produced it, so the guarantee holds on
+        # every path. Measured on the fourteen labelled calls: the model alone
+        # scores 10/14 with four under-triages, and with this floor 13/14 with
+        # none. See scripts/calibrate_severity.py and docs/evaluation.md.
+        raised_from = severity
+        severity = apply_severity_floor(severity, translated_text)
+
         response = get_emergency_response(emergency_type)
         response = augment_actions_from_transcript(translated_text, response)
         response_time = calculate_response_time(emergency_type, response['priority'])
         say(None, emergency_type=emergency_type, severity=severity,
             priority=response['priority'], response_time=response_time)
+        severity_floor, severity_floor_words = severity_from_signals(
+            translated_text, with_evidence=True)
 
         # Summarise only when the model did not. Two summaries of one call is
         # not a second opinion either, and the report already suppressed this
@@ -789,6 +799,14 @@ def process_audio_file(input_path, output_folder, progress=None):
             'summary': summary,
             'summarised_by': summarised_by,
             'second_opinion': second_opinion,
+            # Recorded, not just applied. A severity that was raised by a
+            # keyword rather than by a judgement is a different claim, and
+            # the report says which it was.
+            'severity_source': ('keyword floor' if severity != raised_from
+                                else ('model' if not second_opinion else 'classifier')),
+            'severity_floor': severity_floor,
+            'severity_floor_words': severity_floor_words,
+            'severity_before_floor': raised_from,
             'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             'entities': entities,
             'plots': plots,
