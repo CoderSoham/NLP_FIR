@@ -13,6 +13,7 @@
   --shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
   --accent: #0d6efd;
   --accent-text: #ffffff;
+  --sev-critical: #fecdd3;
   --sev-high: #f8d7da;
   --sev-medium: #fff3cd;
   --sev-low: #d1e7dd;
@@ -31,6 +32,7 @@
     --shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
     --accent: #4f9cf9;
     --accent-text: #0b1220;
+    --sev-critical: #6b1f2b;
     --sev-high: #5b2733;
     --sev-medium: #5a4a1c;
     --sev-low: #1f4536;
@@ -49,6 +51,7 @@ body.dark {
   --shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
   --accent: #4f9cf9;
   --accent-text: #0b1220;
+  --sev-critical: #6b1f2b;
   --sev-high: #5b2733;
   --sev-medium: #5a4a1c;
   --sev-low: #1f4536;
@@ -64,17 +67,72 @@ body {
   transition: background-color 0.3s, color 0.3s;
 }
 
-.mode-toggle {
+/* ---- App shell ----------------------------------------------------------
+   A bar that stays put, so the product has an identity and a way back to the
+   upload form from anywhere in a long report. It replaces a bare "Switch to
+   Dark Mode" button that floated in the corner of the page. */
+
+.appbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
-  justify-content: flex-end;
-  padding: 10px 0;
-  max-width: 1000px;
-  margin: 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  /* The bar sits over scrolling content, so it needs its own ground. */
+  backdrop-filter: saturate(1.2) blur(6px);
 }
 
-.mode-toggle button {
-  padding: 8px 14px;
-  border-radius: 6px;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #b91c1c;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.brand-name { font-size: 1.02rem; }
+
+.appbar-actions { display: flex; align-items: center; gap: 10px; }
+
+.icon-button {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+  padding: 0;
+  border-radius: 8px;
+  background: var(--surface-alt);
+  color: var(--text);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.icon-button:hover { background: var(--border); }
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
 }
 
 .container {
@@ -115,6 +173,7 @@ h2 {
   color: var(--sev-text);
 }
 
+.severity-critical { background: var(--sev-critical); }
 .severity-high { background: var(--sev-high); }
 .severity-medium { background: var(--sev-medium); }
 .severity-low { background: var(--sev-low); }
@@ -443,4 +502,231 @@ code {
   border: 1px dashed var(--muted);
   color: var(--muted);
   vertical-align: middle;
+}
+
+/* ---- Landing and upload -------------------------------------------------
+   A file input styled by the browser tells you nothing about what it wants
+   and gives no feedback once you have chosen. This is the first thing anyone
+   sees, and it was the least finished part of the page. */
+
+.landing { max-width: 720px; text-align: center; padding-top: 56px; }
+.landing h1 { font-size: 2.3rem; line-height: 1.15; margin: 0 0 12px; }
+.landing .lede { margin: 0 auto 32px; max-width: 34em; }
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 44px 24px;
+  border: 2px dashed var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.dropzone:hover,
+.dropzone:focus-within { border-color: var(--accent); }
+
+/* The dragover state has to be obvious or the target feels unresponsive. */
+.dropzone.over {
+  border-color: var(--accent);
+  background: var(--surface-alt);
+}
+
+/* Hidden rather than removed: the label wraps it, so clicking anywhere in
+   the zone still opens the picker, and the field stays keyboard reachable. */
+.dropzone input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dropzone-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  font-size: 1.2rem;
+}
+
+.dropzone-title { font-weight: 600; font-size: 1.05rem; }
+.dropzone-hint { color: var(--muted); font-size: 0.9rem; }
+
+.dropzone-file {
+  margin-top: 10px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.field-error {
+  color: #b91c1c;
+  font-size: 0.9rem;
+  margin: 12px 0 0;
+}
+
+.steps-preview {
+  margin: 48px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+  text-align: left;
+  display: grid;
+  gap: 12px;
+}
+
+.steps-preview li {
+  counter-increment: step;
+  position: relative;
+  padding-left: 38px;
+  color: var(--muted);
+  font-size: 0.94rem;
+}
+
+.steps-preview li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: -1px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.steps-preview strong { color: var(--text); }
+
+/* ---- Report layout ------------------------------------------------------
+   One column of findings and a narrow rail for the things you consult rather
+   than read: the recording, and where every field came from. */
+
+.report-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.report-head h1 { margin: 0 0 4px; font-size: 1.7rem; }
+.report-head .meta { margin: 0; }
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+.col-main { min-width: 0; }
+
+/* Sticky, because it answers questions raised by whatever you are reading
+   further down -- which model said this, how long it took. */
+.col-side {
+  position: sticky;
+  top: 72px;
+  display: grid;
+  gap: 0;
+}
+
+.col-side .section { margin-top: 0; }
+.col-side audio { width: 100%; }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .col-side { position: static; }
+}
+
+.actions { margin: 0; padding-left: 20px; }
+.actions li { margin-bottom: 6px; }
+
+/* ---- Transcript ---------------------------------------------------------
+   Timestamps are the only reason anyone opens this section: they make a
+   passage findable in the recording. */
+
+.transcript-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 420px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-alt);
+}
+
+.transcript-lines li {
+  display: flex;
+  gap: 14px;
+  padding: 7px 14px;
+  font-size: 0.93rem;
+  line-height: 1.55;
+}
+
+.transcript-lines li + li { border-top: 1px solid var(--border); }
+
+.stamp {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  padding-top: 1px;
+}
+
+/* ---- Buttons ------------------------------------------------------------ */
+
+.button.primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: transparent;
+}
+
+.button.ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.button.ghost:hover { background: var(--surface-alt); }
+
+.button.large {
+  margin-top: 20px;
+  padding: 13px 28px;
+  font-size: 1rem;
+  width: 100%;
+  max-width: 320px;
+}
+
+.button[disabled] { opacity: 0.6; cursor: progress; }
+
+/* On a phone the bar wrapped to two lines: the brand word, the action and
+   the toggle do not fit across 375px. The mark alone still identifies the
+   app, and the action keeps its label because that is the one people need. */
+@media (max-width: 460px) {
+  .appbar { padding: 8px 14px; }
+  .brand-name { display: none; }
+  .app { padding: 16px 14px 48px; }
+  .landing { padding-top: 28px; }
+  .landing h1 { font-size: 1.7rem; }
+  .button.large { max-width: none; }
+  .report-head h1 { font-size: 1.35rem; }
+  .dropzone { padding: 32px 16px; }
 }

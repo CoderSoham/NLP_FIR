@@ -39,8 +39,10 @@ def test_every_class_used_has_a_rule():
 
 
 def test_severity_variants_are_all_styled():
+    """`critical` came with the extraction model and the palette did not have
+    it, so a critical call rendered with no severity colour at all."""
     css = read(STYLESHEET)
-    for level in ("high", "medium", "low"):
+    for level in ("critical", "high", "medium", "low"):
         assert f".severity-{level}" in css
 
 
@@ -53,5 +55,5 @@ def test_dark_theme_is_defined_for_both_toggle_and_system():
 def test_colours_come_from_variables_not_literals_in_components():
     """Component rules should read tokens, so both themes stay consistent."""
     css = read(STYLESHEET)
-    body_block = css[css.index("body {"):css.index(".mode-toggle")]
+    body_block = css[css.index("body {"):css.index(".appbar {")]
     assert "var(--bg)" in body_block and "var(--text)" in body_block

@@ -118,19 +118,27 @@ def test_an_unknown_job_is_404(pipeline):
 
 
 def test_the_upload_form_posts_to_the_upload_route(pipeline):
-    """A result page lives at /result/<id>, which is GET-only.
+    """Wherever the form is rendered, it must name the route it posts to.
 
-    The form had no action, so it posted to the current URL and a second
-    upload from a result page returned 405 Method Not Allowed.
+    A result page lives at /result/<id>, which is GET-only. The form had no
+    action, so it posted to the current URL and a second upload from a result
+    page returned 405 Method Not Allowed.
     """
     import re
 
-    from conftest import upload
-
-    body = upload(pipeline.client).get_data(as_text=True)
+    body = pipeline.client.get("/").get_data(as_text=True)
     action = re.search(r'<form[^>]*action="([^"]*)"', body)
     assert action, "the upload form must name the route it posts to"
     assert action.group(1) == "/"
+
+
+def test_a_result_page_offers_a_way_back_to_the_upload_route(pipeline):
+    """The report no longer carries a drop zone -- a full upload form on a
+    finished report is clutter -- so the escape hatch has to be somewhere."""
+    from conftest import upload
+
+    body = upload(pipeline.client).get_data(as_text=True)
+    assert 'href="/"' in body
 
 
 def test_a_second_upload_from_a_result_page_works(pipeline):
@@ -203,3 +211,49 @@ def test_a_second_opinion_is_reported_when_one_was_taken(pipeline):
     pipeline.llm_meta = {"status": "ok", "model": "test", "second_opinion": True}
     html = upload(pipeline.client).get_data(as_text=True)
     assert "ran as a second opinion" in html
+
+
+def test_the_result_page_can_play_the_recording(pipeline):
+    """app.py builds audio_url from data['audio_filename']. The pipeline never
+    set it, so the check was always false and the player only ever appeared on
+    the progress page -- not on the report, where you would check a passage
+    against the audio."""
+    from conftest import upload
+
+    html = upload(pipeline.client).get_data(as_text=True)
+    assert "<audio" in html
+    assert "/audio/" in html
+
+
+def test_the_report_renders_with_only_the_fields_that_always_exist(pipeline):
+    """Every stage is allowed to fail; the report is not.
+
+    A missing optional field used to take the whole page down with a 500 --
+    `analysed_duration_s` did exactly that the moment the audio player started
+    rendering. The transcript is what makes it a report; everything else is a
+    section that should simply not appear.
+    """
+    import app as app_module
+    from flask import render_template
+
+    minimal = {
+        "report_id": "a" * 32,
+        "transcription": "there is a fire on alameda",
+        "timestamp": "2026-01-01 00:00:00",
+        "emergency_type": "fire",
+        "severity": "high",
+        "emergency_response": {"suggestions": []},
+        "entities": [],
+        "plots": [],
+    }
+    with app_module.app.test_request_context("/"):
+        html = render_template("index.html", **minimal)
+    assert "Incident report" in html
+    assert "there is a fire on alameda" in html
+
+
+def test_the_upload_page_renders_with_no_context_at_all(pipeline):
+    """GET / passes nothing but the template name."""
+    body = pipeline.client.get("/").get_data(as_text=True)
+    assert body.count("dropzone") > 1
+    assert "Analyse recording" in body

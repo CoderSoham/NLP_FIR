@@ -33,6 +33,7 @@ class FakePipeline:
 
     def process_audio_file(self, input_path, output_folder, progress=None):
         self.output_folder = output_folder
+        self.input_path = input_path
         # Mirror the real signature: the job runner always passes `progress`,
         # and a stub that does not accept it hides a broken contract.
         if progress:
@@ -46,6 +47,10 @@ class FakePipeline:
                 fh.write(b"\x89PNG\r\n\x1a\n" + b"0" * 256)
         return {
             "report_id": self.report_id,
+            "audio_filename": os.path.basename(input_path),
+            "analysed_duration_s": 100.5,
+            "source_duration_s": 100.5,
+            "truncated": False,
             "plots": list(self.plots),
             "transcription": "there is a fire on alameda",
             "translated_text": None,

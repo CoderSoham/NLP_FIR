@@ -4,12 +4,18 @@
   <meta charset="UTF-8" />
   <title>Processing — 911 First Responder</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
-  <div class="container">
-    <h1>911 First Responder</h1>
+  <header class="appbar">
+    <a class="brand" href="{{ url_for('index') }}">
+      <span class="brand-mark" aria-hidden="true">911</span>
+      <span class="brand-name">First Responder</span>
+    </a>
+  </header>
+
+  <main class="app">
 
     {% if failed %}
     <div class="notice warn section">
@@ -45,7 +51,7 @@
     </div>
     {% endif %}
     {% endif %}
-  </div>
+  </main>
 
   <script>
     const jobId = {{ job_id|tojson }};

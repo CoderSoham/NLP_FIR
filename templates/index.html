@@ -4,42 +4,71 @@
   <meta charset="UTF-8" />
   <title>911 First Responder</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
-  <div class="mode-toggle">
-    <button id="modeToggle">Switch to Dark Mode</button>
-  </div>
-
-  <div class="container">
-    <h1>911 First Responder</h1>
-    <p class="tagline">Upload an emergency call recording for transcription, triage and an incident report.</p>
-
-    <div class="upload-form">
-      <!-- An explicit action. Without one the form posts to the current URL,
-           which on /result/<job_id> is a GET-only route -- so uploading a
-           second recording from a result page returned 405. -->
-      <form method="post" action="{{ url_for('index') }}"
-            enctype="multipart/form-data">
-        <input type="file" name="audio_file" accept="audio/*" required>
-        <button type="submit">Process Audio</button>
-      </form>
+  <header class="appbar">
+    <a class="brand" href="{{ url_for('index') }}">
+      <span class="brand-mark" aria-hidden="true">911</span>
+      <span class="brand-name">First Responder</span>
+    </a>
+    <div class="appbar-actions">
+      {% if transcription %}
+      <a class="button ghost" href="{{ url_for('index') }}">New analysis</a>
+      {% endif %}
+      <button id="modeToggle" class="icon-button" type="button"
+              aria-label="Switch colour theme" title="Switch colour theme">
+        <span aria-hidden="true">◐</span>
+      </button>
     </div>
+  </header>
 
-    {% if audio_url %}
-    <div class="audio-player section">
-      <h2>🎧 Audio Playback</h2>
-      <audio controls>
-        <source src="{{ audio_url }}" type="audio/wav">
-        Your browser does not support the audio element.
-      </audio>
-    </div>
-    {% endif %}
+  {% if not transcription %}
+  <!-- ---------- Upload ---------------------------------------------- -->
+  <main class="app landing">
+    <h1>Turn an emergency call into a filed report</h1>
+    <p class="lede">Transcription, triage, an evidenced incident record and a
+      printable FIR — from one recording, in seconds.</p>
 
-    {% if transcription %}
-    <div class="timestamp section">
-      Processed at: {{ timestamp }}
+    <!-- An explicit action. Without one the form posts to the current URL,
+         which on /result/<job_id> is a GET-only route -- so uploading a
+         second recording from a result page returned 405. -->
+    <form id="uploadForm" method="post" action="{{ url_for('index') }}"
+          enctype="multipart/form-data">
+      <label class="dropzone" id="dropzone" for="audioInput">
+        <input id="audioInput" type="file" name="audio_file" accept="audio/*" required>
+        <span class="dropzone-icon" aria-hidden="true">↑</span>
+        <span class="dropzone-title">Drop a recording here</span>
+        <span class="dropzone-hint">or click to choose a file · mp3, wav, m4a, ogg</span>
+        <span class="dropzone-file" id="chosenFile" hidden></span>
+      </label>
+      <p class="field-error" id="uploadError" hidden></p>
+      <button type="submit" class="button primary large" id="submitButton">
+        Analyse recording
+      </button>
+    </form>
+
+    <ol class="steps-preview">
+      <li><strong>Transcribe</strong> the call, locally or on a free hosted tier.</li>
+      <li><strong>Extract</strong> an incident record every claim of which is
+        quoted from the transcript.</li>
+      <li><strong>File</strong> a report with its own provenance attached.</li>
+    </ol>
+  </main>
+
+  {% else %}
+  <!-- ---------- Report ------------------------------------------------ -->
+  {% set L = llm or {} %}
+  <main class="app">
+    <div class="report-head">
+      <div>
+        <h1>Incident report</h1>
+        <p class="meta">Processed {{ timestamp }} · reference
+          <code>{{ report_id[:12] }}</code></p>
+      </div>
+      <a href="{{ url_for('download_fir', report_id=report_id) }}"
+         class="button primary">Download report</a>
     </div>
 
     {% if truncated %}
@@ -60,8 +89,7 @@
     </div>
     {% endif %}
 
-    {% set L = llm or {} %}
-    <div class="triage severity-{{ severity }}">
+    <div class="triage severity-{{ (L.severity or severity)|lower }}">
       <div class="triage-main">
         <span class="triage-label">Emergency type</span>
         <span class="triage-value">{{ (L.incident_type or emergency_type)|title }}</span>
@@ -101,211 +129,219 @@
     </div>
     {% endif %}
 
-    {% if L.summary %}
-    <div class="section">
-      <h2>Summary</h2>
-      <p class="lede">{{ L.summary }}</p>
-    </div>
-    {% elif summary %}
-    <div class="section">
-      <h2>Summary</h2>
-      <p class="lede">{{ summary }}</p>
-    </div>
-    {% endif %}
-
-    {% if L.uncertainties %}
-    <div class="section">
-      <h2>What the call does not establish</h2>
-      <ul class="uncertainty">
-        {% for u in L.uncertainties %}<li>{{ u }}</li>{% endfor %}
-      </ul>
-    </div>
-    {% endif %}
-
-    <div class="grid">
-      {% if L.weapons %}
-      <div class="card danger">
-        <h3>Weapons</h3>
-        {% for w in L.weapons %}
-        <p><strong>{{ w.item }}</strong><br><span class="quote">"{{ w.quote }}"</span></p>
-        {% endfor %}
-      </div>
-      {% endif %}
-      {% if L.injuries %}
-      <div class="card"><h3>Injuries</h3><ul>{% for i in L.injuries %}<li>{{ i }}</li>{% endfor %}</ul></div>
-      {% endif %}
-      {% if L.hazards %}
-      <div class="card"><h3>Hazards</h3><ul>{% for h in L.hazards %}<li>{{ h }}</li>{% endfor %}</ul></div>
-      {% endif %}
-      {% if L.services_needed %}
-      <div class="card"><h3>Services</h3><p>{{ L.services_needed|join(', ')|upper }}</p></div>
-      {% endif %}
-      {% if L.callback_number or L.caller_name %}
-      <div class="card"><h3>Caller</h3>
-        <p>{{ L.caller_name or 'Name not given' }}<br>{{ L.callback_number or 'No callback number' }}</p></div>
-      {% endif %}
-    </div>
-
-    <div class="response-suggestions section">
-      <h2>Recommended actions</h2>
-      {% for suggestion in emergency_response.suggestions %}
-      <div class="suggestion-item">
-        {{ suggestion }}
-      </div>
-      {% endfor %}
-    </div>
-
-    <div class="section">
-      <h2>Transcript</h2>
-      {% if asr %}
-      <p class="meta">{{ asr.model }} · {{ asr.device }}{% if asr.mean_logprob %} ·
-        mean confidence {{ '%.2f'|format(asr.mean_logprob) }}{% endif %}
-        {%- if asr.degraded %} · <span class="warn-text">{{ asr.degraded }}</span>{% endif %}</p>
-      {% endif %}
-      <p class="transcript">{{ transcription }}</p>
-    </div>
-
-    {% if summary and summary|length > 0 %}
-    <div class="section">
-      <h2>📋 Summary</h2>
-      <p>{{ summary }}</p>
-    </div>
-    {% endif %}
-
-    {% if emergency_response.signals %}
-    <div class="section">
-      <h2>Phrases matched in the transcript</h2>
-      <p class="meta">Keyword matches, not judgements. Listed so an advisory can
-         be traced to the words that raised it.</p>
-      <ul>
-        {% for group, words in emergency_response.signals.items() %}
-        <li><strong>{{ group|title }}:</strong> {{ words|join(', ') }}</li>
-        {% endfor %}
-      </ul>
-    </div>
-    {% endif %}
-
-    <div class="section">
-      <h2>Named entities</h2>
-      <p class="entities">
-        {% for entity in entities %}<span class="tag" title="{{ entity.label }}">{{ entity.text }}<em>{{ entity.label }}</em></span>{% endfor %}
-      </p>
-    </div>
-
-    {% set plot_titles = {
-      'waveform': ['Waveform', 'Amplitude over time. Flat stretches are silence; clipping shows as a flat top.'],
-      'mfcc': ['MFCC 1-12', 'Cepstral coefficients, the features a classical speech model consumes. Unitless.'],
-      'pitch': ['Pitch', 'Fundamental frequency of voiced frames, 65-400 Hz. Gaps are unvoiced or silent.'],
-      'entities': ['Entity types', 'How many of each entity label spaCy found in the transcript.']} %}
-    {% if plots %}
-    <!-- Collapsed by default. These describe the audio signal, not the
-         incident -- they are for someone debugging a bad transcription, and
-         putting four charts above the fold pushed the actual report down. -->
-    <details class="section charts" id="charts">
-      <summary>Signal diagnostics <span class="muted">— {{ plots|length }} charts</span></summary>
-      <p class="muted chart-intro">
-        These describe the recording, not the emergency. Useful when a
-        transcript looks wrong and you want to see whether the audio is.
-      </p>
-      {% for kind in plots %}
-      {% set meta = plot_titles.get(kind, [kind, '']) %}
-      <figure class="chart">
-        <!-- data-src, not loading="lazy". An image with loading="lazy"
-             inside a <details> that starts closed never fetches, not even
-             once the details is opened -- the section rendered as four 2px
-             slivers. The script below sets src on first open. -->
-        <img data-src="{{ url_for('serve_plot', report_id=report_id, kind=kind) }}"
-             class="plot" alt="{{ meta[0] }}">
-        <figcaption><strong>{{ meta[0] }}</strong> {{ meta[1] }}</figcaption>
-      </figure>
-      {% endfor %}
-    </details>
-    {% endif %}
-
-    <!-- The route already put the job's stage timings on the context and
-         nothing rendered them. They answer the two questions a reader of a
-         90-second wait actually has: where did the time go, and which model
-         produced this. -->
-    <details class="section provenance">
-      <summary>How this was produced</summary>
-      <dl class="provenance-grid">
-        {% if asr %}
-        <dt>Transcribed by</dt>
-        <dd>{{ asr.model or 'unknown' }}{% if asr.backend %} · {{ asr.backend }}{% elif asr.device %} · {{ asr.device }}{% endif %}
-          {% if asr.cached %}<span class="muted">(cached)</span>{% endif %}</dd>
-        {% endif %}
-        {% if llm_meta %}
-        <dt>Incident record</dt>
-        <dd>
-          {% if llm_meta.status == 'ok' %}
-            {{ llm_meta.model }}
-            {% if llm_meta.seconds %}<span class="muted">· {{ llm_meta.seconds }}s</span>{% endif %}
-          {% else %}
-            <span class="muted">not produced — {{ llm_meta.reason }}</span>
-          {% endif %}
-        </dd>
+    <div class="layout">
+      <div class="col-main">
+        {% set shown_summary = L.summary or summary %}
+        {% if shown_summary %}
+        <section class="section">
+          <h2>What happened</h2>
+          <p class="lede">{{ shown_summary }}</p>
+        </section>
         {% endif %}
 
-        {# Which path classified this call. Saying so matters: without the
-           local classifiers there is no independent second opinion, and the
-           disagreement banner cannot fire on type or severity. #}
-        {% if llm_meta and llm_meta.second_opinion is defined %}
-        <dt>Classified by</dt>
-        <dd>
-          {% if llm_meta.second_opinion %}
-            Both paths — the local classifiers ran as a second opinion, and
-            any disagreement is shown above.
-          {% else %}
-            The extraction model alone. The local classifiers were skipped,
-            so there is no independent check on type or severity.
-            <span class="muted">Set <code>LOCAL_ANALYSIS=always</code> to run them.</span>
-          {% endif %}
-        </dd>
-        {% endif %}
-
-        {% if summarised_by %}
-        <dt>Summarised by</dt>
-        <dd>{{ 'the extraction model' if summarised_by == 'model'
-               else 'BART, locally' }}</dd>
-        {% endif %}
-        {% if llm_meta and llm_meta.failed_over_from %}
-        <dt>Failed over</dt>
-        <dd>{{ llm_meta.failed_over_from }} did not answer, so
-          {{ llm_meta.backend }} was used instead.
-          {% for a in llm_meta.attempts if a.error %}
-          <br><code>{{ a.backend }}: {{ a.error }}</code>
+        {% if L.weapons %}
+        <section class="section card danger">
+          <h2>Weapons mentioned in the call</h2>
+          {% for w in L.weapons %}
+          <p><strong>{{ w.item }}</strong><br><span class="quote">"{{ w.quote }}"</span></p>
           {% endfor %}
-        </dd>
+          <p class="meta">Each entry is quoted from the transcript. A claim the
+            model could not quote was dropped.</p>
+        </section>
         {% endif %}
-        <dt>Audio</dt>
-        <dd>{{ analysed_duration_s }}s analysed{% if truncated %}
-          of {{ source_duration_s }}s{% endif %}</dd>
-      </dl>
-      {% if job and job.history %}
-      <ol class="steps">
-        {% for h in job.history %}
-        <li><span>{{ h.stage }}</span><em>{{ h.seconds }}s</em></li>
-        {% endfor %}
-      </ol>
-      <p class="muted">{{ job.elapsed }}s total.</p>
-      {% endif %}
-    </details>
 
-    <div class="section">
-      <a href="{{ url_for('download_fir', report_id=report_id) }}" class="button">📄 Download FIR Report</a>
+        {% if L.uncertainties %}
+        <section class="section">
+          <h2>What the call does not establish</h2>
+          <ul class="uncertainty">
+            {% for u in L.uncertainties %}<li>{{ u }}</li>{% endfor %}
+          </ul>
+        </section>
+        {% endif %}
+
+        <section class="section">
+          <h2>Details</h2>
+          <div class="grid">
+            {% if L.injuries %}
+            <div class="card"><h3>Injuries</h3><ul>{% for i in L.injuries %}<li>{{ i }}</li>{% endfor %}</ul></div>
+            {% endif %}
+            {% if L.hazards %}
+            <div class="card"><h3>Hazards</h3><ul>{% for h in L.hazards %}<li>{{ h }}</li>{% endfor %}</ul></div>
+            {% endif %}
+            {% if L.vehicles %}
+            <div class="card"><h3>Vehicles</h3><ul>{% for v in L.vehicles %}<li>{{ v }}</li>{% endfor %}</ul></div>
+            {% endif %}
+            {% if L.suspect_description %}
+            <div class="card"><h3>Suspect</h3><p>{{ L.suspect_description }}</p></div>
+            {% endif %}
+            {% if L.services_needed %}
+            <div class="card"><h3>Services</h3><p>{{ L.services_needed|join(', ')|upper }}</p></div>
+            {% endif %}
+            {% if L.callback_number or L.caller_name %}
+            <div class="card"><h3>Caller</h3>
+              <p>{{ L.caller_name or 'Name not given' }}<br>{{ L.callback_number or 'No callback number' }}</p></div>
+            {% endif %}
+            {% if not (L.injuries or L.hazards or L.vehicles or L.suspect_description
+                       or L.services_needed or L.callback_number or L.caller_name) %}
+            <p class="muted">The call did not establish any of these.</p>
+            {% endif %}
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>Recommended actions</h2>
+          <ul class="actions">
+            {% for suggestion in emergency_response.suggestions %}
+            <li>{{ suggestion }}</li>
+            {% endfor %}
+          </ul>
+          {% if emergency_response.signals %}
+          <p class="meta">Some of these were added because these words appear in
+            the transcript — keyword matches, not judgements:
+            {% for group, words in emergency_response.signals.items() %}
+            <strong>{{ group|title }}</strong> {{ words|join(', ') }}{% if not loop.last %}; {% endif %}
+            {% endfor %}
+          </p>
+          {% endif %}
+        </section>
+
+        <section class="section">
+          <h2>Transcript</h2>
+          {% if asr %}
+          <p class="meta">{{ asr.model }} · {{ asr.backend or asr.device }}{% if asr.mean_logprob %} ·
+            mean confidence {{ '%.2f'|format(asr.mean_logprob) }}{% endif %}
+            {%- if asr.degraded %} · <span class="warn-text">{{ asr.degraded }}</span>{% endif %}</p>
+          {% endif %}
+          {% if asr_segments %}
+          <ol class="transcript-lines">
+            {% for s in asr_segments %}
+            <li><span class="stamp">{{ '%d:%02d'|format((s.start or 0) // 60, (s.start or 0) % 60) }}</span>
+              <span>{{ s.text }}</span></li>
+            {% endfor %}
+          </ol>
+          {% else %}
+          <p class="transcript">{{ transcription }}</p>
+          {% endif %}
+        </section>
+
+        <section class="section">
+          <h2>Named entities</h2>
+          <p class="entities">
+            {% for entity in entities %}<span class="tag" title="{{ entity.label }}">{{ entity.text }}<em>{{ entity.label }}</em></span>{% endfor %}
+          </p>
+        </section>
+
+        {% set plot_titles = {
+          'waveform': ['Waveform', 'Amplitude over time. Flat stretches are silence; clipping shows as a flat top.'],
+          'mfcc': ['MFCC 1-12', 'Cepstral coefficients, the features a classical speech model consumes. Unitless.'],
+          'pitch': ['Pitch', 'Fundamental frequency of voiced frames, 65-400 Hz. Gaps are unvoiced or silent.'],
+          'entities': ['Entity types', 'How many of each entity label spaCy found in the transcript.']} %}
+        {% if plots %}
+        <!-- Collapsed by default. These describe the audio signal, not the
+             incident -- they are for someone debugging a bad transcription. -->
+        <details class="section charts" id="charts">
+          <summary>Signal diagnostics <span class="muted">— {{ plots|length }} charts</span></summary>
+          <p class="muted chart-intro">
+            These describe the recording, not the emergency. Useful when a
+            transcript looks wrong and you want to see whether the audio is.
+          </p>
+          {% for kind in plots %}
+          {% set meta = plot_titles.get(kind, [kind, '']) %}
+          <figure class="chart">
+            <!-- data-src, not loading="lazy". An image with loading="lazy"
+                 inside a <details> that starts closed never fetches, not even
+                 once the details is opened -- the section rendered as four 2px
+                 slivers. The script below sets src on first open. -->
+            <img data-src="{{ url_for('serve_plot', report_id=report_id, kind=kind) }}"
+                 class="plot" alt="{{ meta[0] }}">
+            <figcaption><strong>{{ meta[0] }}</strong> {{ meta[1] }}</figcaption>
+          </figure>
+          {% endfor %}
+        </details>
+        {% endif %}
+      </div>
+
+      <aside class="col-side">
+        {% if audio_url %}
+        <section class="section">
+          <h2>Recording</h2>
+          <audio controls src="{{ audio_url }}"></audio>
+          {% if analysed_duration_s %}
+          <p class="meta">{{ '%d:%02d'|format(analysed_duration_s // 60, analysed_duration_s % 60) }} analysed</p>
+          {% endif %}
+        </section>
+        {% endif %}
+
+        <section class="section">
+          <h2>How this was produced</h2>
+          <dl class="provenance-grid">
+            {% if asr %}
+            <dt>Transcribed by</dt>
+            <dd>{{ asr.model or 'unknown' }}{% if asr.backend %} · {{ asr.backend }}{% elif asr.device %} · {{ asr.device }}{% endif %}
+              {% if asr.cached %}<span class="muted">(cached)</span>{% endif %}</dd>
+            {% endif %}
+            {% if llm_meta %}
+            <dt>Incident record</dt>
+            <dd>
+              {% if llm_meta.status == 'ok' %}
+                {{ llm_meta.model }}
+                {% if llm_meta.seconds %}<span class="muted">· {{ llm_meta.seconds }}s</span>{% endif %}
+              {% else %}
+                <span class="muted">not produced — {{ llm_meta.reason }}</span>
+              {% endif %}
+            </dd>
+            {% endif %}
+            {% if llm_meta and llm_meta.failed_over_from %}
+            <dt>Failed over</dt>
+            <dd>{{ llm_meta.failed_over_from }} did not answer, so
+              {{ llm_meta.backend }} was used instead.</dd>
+            {% endif %}
+            {% if llm_meta and llm_meta.second_opinion is defined %}
+            <dt>Classified by</dt>
+            <dd>
+              {% if llm_meta.second_opinion %}
+                Both paths — the local classifiers ran as a second opinion, and
+                any disagreement is shown above.
+              {% else %}
+                The extraction model alone. The local classifiers were skipped,
+                so there is no independent check on type or severity.
+                <span class="muted">Set <code>LOCAL_ANALYSIS=always</code> to run them.</span>
+              {% endif %}
+            </dd>
+            {% endif %}
+            {% if summarised_by %}
+            <dt>Summarised by</dt>
+            <dd>{{ 'the extraction model' if summarised_by == 'model'
+                   else 'BART, locally' }}</dd>
+            {% endif %}
+            {% if dispatch and dispatch.example_data %}
+            <dt>Station registry</dt>
+            <dd><span class="placeholder">example data</span>
+              These stations do not exist. Supply your own with
+              <code>STATIONS_FILE</code>.</dd>
+            {% endif %}
+          </dl>
+          {% if job and job.history %}
+          <ol class="steps">
+            {% for h in job.history %}
+            <li><span>{{ h.stage }}</span><em>{{ h.seconds }}s</em></li>
+            {% endfor %}
+          </ol>
+          <p class="muted">{{ job.elapsed }}s total.</p>
+          {% endif %}
+        </section>
+      </aside>
     </div>
-    {% endif %}
-  </div>
+  </main>
+  {% endif %}
 
-  <!-- WORKING SCRIPT -->
   <script>
     const body = document.body;
     const toggleBtn = document.getElementById('modeToggle');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
 
     // No class is set on load, so the page follows prefers-color-scheme.
     // The first click commits to the opposite of whatever is showing.
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
-
     function isDark() {
       if (body.classList.contains('dark')) return true;
       if (body.classList.contains('light')) return false;
@@ -313,21 +349,90 @@
     }
 
     function label() {
-      toggleBtn.textContent = isDark() ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+      const next = isDark() ? 'light' : 'dark';
+      toggleBtn.title = `Switch to ${next} mode`;
+      toggleBtn.setAttribute('aria-label', toggleBtn.title);
     }
 
     toggleBtn.addEventListener('click', () => {
       const goDark = !isDark();
       body.classList.toggle('dark', goDark);
       body.classList.toggle('light', !goDark);
+      try { localStorage.setItem('theme', goDark ? 'dark' : 'light'); }
+      catch (err) { /* storage unavailable; the toggle still works */ }
       label();
     });
 
+    try {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'dark' || saved === 'light') body.classList.add(saved);
+    } catch (err) { /* follow the system preference */ }
     prefersDark.addEventListener('change', label);
     label();
 
-    // Whether the diagnostics are open is a per-reader preference, not a
-    // per-report one. Wrapped because storage throws in a private window.
+    // ---- Upload ----------------------------------------------------------
+    const dropzone = document.getElementById('dropzone');
+    if (dropzone) {
+      const input = document.getElementById('audioInput');
+      const chosen = document.getElementById('chosenFile');
+      const error = document.getElementById('uploadError');
+      const form = document.getElementById('uploadForm');
+      const submit = document.getElementById('submitButton');
+      const MAX_BYTES = 25 * 1024 * 1024;
+
+      const size = (bytes) => bytes > 1048576
+        ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.ceil(bytes / 1024)} KB`;
+
+      function show(file) {
+        error.hidden = true;
+        if (!file) { chosen.hidden = true; return; }
+        // Checked here as well as on the server. Posting 60 MB in order to be
+        // told it was too big wastes the upload, and on a phone it wastes the
+        // user's data too.
+        if (file.size > MAX_BYTES) {
+          error.hidden = false;
+          error.textContent =
+            `${file.name} is ${size(file.size)}. The limit is 25 MB.`;
+          input.value = '';
+          chosen.hidden = true;
+          return;
+        }
+        chosen.hidden = false;
+        chosen.textContent = `${file.name} · ${size(file.size)}`;
+      }
+
+      input.addEventListener('change', () => show(input.files[0]));
+
+      for (const name of ['dragenter', 'dragover', 'dragleave', 'drop']) {
+        dropzone.addEventListener(name, (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        });
+      }
+      for (const name of ['dragenter', 'dragover']) {
+        dropzone.addEventListener(name, () => dropzone.classList.add('over'));
+      }
+      for (const name of ['dragleave', 'drop']) {
+        dropzone.addEventListener(name, () => dropzone.classList.remove('over'));
+      }
+      dropzone.addEventListener('drop', (event) => {
+        const dropped = event.dataTransfer.files;
+        if (dropped && dropped.length) {
+          input.files = dropped;
+          show(dropped[0]);
+        }
+      });
+
+      form.addEventListener('submit', (event) => {
+        if (!input.files.length) return;
+        // The pipeline takes seconds, not milliseconds. Without this the
+        // button stays live and a second click posts the file twice.
+        submit.disabled = true;
+        submit.textContent = 'Uploading…';
+      });
+    }
+
+    // ---- Charts ----------------------------------------------------------
     const charts = document.getElementById('charts');
     if (charts) {
       const loadCharts = () => {

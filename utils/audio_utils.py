@@ -774,6 +774,11 @@ def process_audio_file(input_path, output_folder, progress=None):
 
         data = {
             'report_id': report_id,
+            # The route builds audio_url from this. It was never set, so the
+            # player appeared on the progress page -- which passes its own --
+            # and then vanished from the report, where you would actually
+            # want to check a passage against the recording.
+            'audio_filename': os.path.basename(input_path),
             'transcription': transcription,
             'translated_text': translated_text if translated_text != transcription else None,
             'language': lang,
