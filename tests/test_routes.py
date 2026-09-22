@@ -257,3 +257,43 @@ def test_the_upload_page_renders_with_no_context_at_all(pipeline):
     body = pipeline.client.get("/").get_data(as_text=True)
     assert body.count("dropzone") > 1
     assert "Analyse recording" in body
+
+
+def test_a_raised_severity_names_the_words_that_raised_it(pipeline):
+    """Keyword matching cannot tell a threat from a figure of speech, so the
+    page shows the evidence rather than only the verdict."""
+    import html as html_lib
+    import re
+
+    import app as app_module
+    from flask import render_template
+
+    ctx = dict(report_id="a" * 32, transcription="x", timestamp="t",
+               emergency_type="police", severity="critical",
+               severity_before_floor="medium", severity_source="keyword floor",
+               severity_floor="critical", severity_floor_words=["shot", "shots"],
+               emergency_response={"suggestions": []}, entities=[], plots=[])
+    with app_module.app.test_request_context("/"):
+        page = render_template("index.html", **ctx)
+
+    note = re.search(r'<span class="triage-note">(.*?)</span>', page, re.S)
+    assert note, "a raised severity must say it was raised"
+    text = html_lib.unescape(" ".join(note.group(1).split()))
+    assert "raised from Medium" in text
+    assert "shot, shots" in text
+    # Regression: joining on '", "' escaped to &#34; and rendered as a mix of
+    # curly and straight quotes.
+    assert '"' not in text
+
+
+def test_a_severity_the_model_already_got_right_is_not_annotated(pipeline):
+    import app as app_module
+    from flask import render_template
+
+    ctx = dict(report_id="a" * 32, transcription="x", timestamp="t",
+               emergency_type="police", severity="critical",
+               severity_before_floor="critical", severity_source="model",
+               emergency_response={"suggestions": []}, entities=[], plots=[])
+    with app_module.app.test_request_context("/"):
+        page = render_template("index.html", **ctx)
+    assert "triage-note" not in page

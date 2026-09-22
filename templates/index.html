@@ -100,7 +100,7 @@
         {% if severity_source == 'keyword floor' %}
         <span class="triage-note">raised from
           {{ severity_before_floor|title }} by
-          {% if severity_floor_words %}&ldquo;{{ severity_floor_words|join('", "') }}&rdquo;
+          {% if severity_floor_words %}&ldquo;{{ severity_floor_words|join(', ') }}&rdquo;
           {% else %}words{% endif %} in the transcript</span>
         {% endif %}
       </div>
