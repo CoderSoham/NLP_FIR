@@ -136,15 +136,16 @@ def main():
               f"{label!r} -- the results below are not for the model you named.")
     print()
 
-    scores = []
+    scores, shipped_scores = [], []
     for attempt in range(1, args.repeat + 1):
         if args.repeat > 1:
             print(f"--- run {attempt} of {args.repeat} ---")
-        passed, total, rows = score_all(
+        passed, total, shipped, rows = score_all(
             transcripts, labels, extract_incident, verbose=args.repeat == 1)
         scores.append(passed)
+        shipped_scores.append(shipped)
         if args.repeat > 1:
-            print(f"    {passed}/{total}")
+            print(f"    {passed}/{total}  (as shipped {shipped}/{total})")
 
     if args.repeat > 1:
         # Three consecutive runs on identical code and identical input gave
@@ -154,25 +155,47 @@ def main():
         # prevent.
         print(f"\nTOTAL {min(scores)}-{max(scores)}/{total} over "
               f"{args.repeat} runs (mean {statistics.mean(scores):.1f})")
+        print(f"AS SHIPPED {min(shipped_scores)}-{max(shipped_scores)}/{total} "
+              f"(mean {statistics.mean(shipped_scores):.1f}) -- model output "
+              f"plus the severity floor the pipeline applies")
         if len(set(scores)) > 1:
             print("The spread is the model's, not the code's. Compare ranges, "
                   "not single runs.")
     else:
-        print(f"\nTOTAL {passed}/{total}")
+        print(f"\nTOTAL {passed}/{total}          model output alone")
+        print(f"AS SHIPPED {shipped}/{total}     with the severity floor "
+              f"the pipeline applies")
 
     os.makedirs(args.out, exist_ok=True)
     slug = label.replace("/", "_").replace(" ", "").replace("(", "").replace(")", "")
     path = os.path.join(args.out, f"{backend.name}__{slug}.json")
     json.dump({"backend": backend.name, "model": label, "load_seconds": load_s,
-               "passed": passed, "total": total, "runs": scores, "rows": rows},
+               "passed": passed, "total": total, "runs": scores,
+               "shipped_passed": shipped, "shipped_runs": shipped_scores,
+               "rows": rows},
               open(path, "w"), indent=2, default=str)
     print("wrote", path)
     return 0
 
 
+def as_shipped(record, transcript):
+    """The record the *pipeline* would produce, not the raw model output.
+
+    The severity floor lives in process_audio_file, so scoring
+    `extract_incident` alone measured the model and not the product -- and
+    the gap is the whole point of the floor: 10/14 for the model, 13/14 once
+    it is applied. A harness blind to a shipped behaviour will happily report
+    a regression that users never see, or miss one they do.
+    """
+    from utils.severity import apply_severity_floor
+
+    return dict(record,
+                severity=apply_severity_floor(record.get("severity"), transcript))
+
+
 def score_all(transcripts, labels, extract_incident, verbose=True):
-    """One pass over the set. Returns (passed, total, rows)."""
-    rows, passed, total = [], 0, 0
+    """One pass over the set. Returns (passed, total, shipped_passed, rows)."""
+    rows, passed, total, shipped_passed = [], 0, 0, 0
     for sample, entry in sorted(transcripts.items()):
         truth = labels.get(sample)
         if not truth:
@@ -192,16 +215,26 @@ def score_all(transcripts, labels, extract_incident, verbose=True):
         ok = sum(1 for c in checks.values() if c["pass"])
         passed += ok
         total += len(checks)
+
+        shipped_checks = score(as_shipped(record, entry["text"]), truth)
+        shipped_ok = sum(1 for c in shipped_checks.values() if c["pass"])
+        shipped_passed += shipped_ok
+
         if verbose:
-            print(f"{sample:14} {ok}/{len(checks)}  {elapsed:6.1f}s")
+            extra = (f"  (as shipped {shipped_ok}/{len(checks)})"
+                     if shipped_ok != ok else "")
+            print(f"{sample:14} {ok}/{len(checks)}  {elapsed:6.1f}s{extra}")
             for name, c in checks.items():
                 if not c["pass"]:
+                    fixed = ("  -- fixed by the severity floor"
+                             if shipped_checks[name]["pass"] else "")
                     print(f"    FAIL {name:22} expected {c['expected']!r}  "
-                          f"got {c['got']!r}")
+                          f"got {c['got']!r}{fixed}")
         rows.append({"sample": sample, "seconds": elapsed,
-                     "checks": checks, "record": record, "meta": meta})
+                     "checks": checks, "shipped_checks": shipped_checks,
+                     "record": record, "meta": meta})
 
-    return passed, total, rows
+    return passed, total, shipped_passed, rows
 
 
 if __name__ == "__main__":

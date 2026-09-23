@@ -18,12 +18,28 @@ Six checks per call — incident type, severity, weapons, location stated,
 location content, schema cleanliness — so 84 points.
 
 ```
-TOTAL 81-82/84 over 3 runs (mean 81.3)
+TOTAL 79/84          model output alone
+AS SHIPPED 81/84     with the severity floor the pipeline applies
 ```
 
-**Report a range, not a number.** Three consecutive runs on identical code and
-identical transcripts gave 82, 81 and 81, and the *failing items moved between
-runs*. A hosted mixture-of-experts model is not deterministic across requests
+**Two numbers, because they answer different questions.** `TOTAL` scores the
+model's raw output, which is what you want when comparing two models.
+`AS SHIPPED` applies the severity floor `process_audio_file` applies, which is
+what a user actually gets. The harness scored only the first until 2026-09-22,
+so it was blind to a shipped behaviour — it would have reported a regression
+nobody experiences, or missed one they do.
+
+Per-call lines say which failures the floor fixed and which it caused:
+
+```
+call_219.mp3   5/6    34.2s  (as shipped 6/6)
+    FAIL severity   expected 'high..critical'  got 'low'  -- fixed by the severity floor
+call_9.mp3     6/6     5.2s  (as shipped 5/6)
+```
+
+**Report a range, not a number.** Consecutive runs on identical code and
+identical transcripts have given 77, 79, 81 and 82, and the *failing items
+move between runs*. A hosted mixture-of-experts model is not deterministic across requests
 even at temperature 0. A single run is a draw from that distribution; reading
 82 against 81 as a regression is a mistake the harness now prevents by
 printing the spread.
